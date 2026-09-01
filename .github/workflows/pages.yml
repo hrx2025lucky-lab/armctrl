@@ -1,9 +1,13 @@
 name: pages
 
-# 为什么用 Actions 部署而不是「Settings 里选 main /docs」：
-# 那种方式要先去仓库设置里点一下开关。用 actions/configure-pages 的
-# enablement: true，工作流自带的 GITHUB_TOKEN 就能把 Pages 打开，
-# 不需要任何手工步骤——换一台机器、换一个人接手也一样能跑。
+# 站点发布方式：gh-pages 分支（Pages 源已固定为它）。
+#
+# 为什么不用 actions/deploy-pages：那条路要求 Pages 源设成「GitHub Actions」，
+# 而切换源需要管理员权限。实测工作流自带的 GITHUB_TOKEN **无权创建/切换**
+# Pages 站点（Resource not accessible by integration）。
+# 推 gh-pages 分支则会让 GitHub 自动把站点开起来，不需要任何手工设置。
+#
+# 所以这里做的事很简单：main 的 docs/ 一变，就同步到 gh-pages。
 
 on:
   push:
@@ -14,32 +18,39 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write          # 部署 Pages 需要
-  id-token: write       # OIDC，deploy-pages 用它换取部署凭据
+  contents: write        # 需要往 gh-pages 分支推
 
-# 同一时间只跑一个部署；新的推送不打断正在进行的发布
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  sync:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v5
-
-      - uses: actions/configure-pages@v5
         with:
-          enablement: true      # 站点没开过的话，这里自动开
+          fetch-depth: 0        # 要完整历史才能切到 gh-pages
 
-      # docs/ 里已有 .nojekyll，静态文件原样发布，不走 Jekyll
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs
+      - name: 把 docs/ 同步到 gh-pages
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - id: deploy
-        uses: actions/deploy-pages@v4
+          # 站点内容先拿到手，再切分支（切过去之后 docs/ 就不在了）
+          tmp="$(mktemp -d)"
+          cp -r docs/. "$tmp/"
+
+          git checkout gh-pages
+          # 只删站点文件，别碰 .git
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -r "$tmp"/. .
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "站点内容没有变化，跳过提交"
+            exit 0
+          fi
+          git commit -m "site: 同步 main 的 docs/（${GITHUB_SHA::7}）"
+          git push origin gh-pages

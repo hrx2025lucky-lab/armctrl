@@ -2,6 +2,8 @@
 
 [![tests](https://github.com/hrx2025lucky-lab/armctrl/actions/workflows/tests.yml/badge.svg)](https://github.com/hrx2025lucky-lab/armctrl/actions/workflows/tests.yml)
 
+🌐 **项目主页：<https://hrx2025lucky-lab.github.io/armctrl/>** —— 7 段运行录像 + 对照图 + 验证方法，不用装任何东西就能看。
+
 以 **Franka Panda**（7 自由度冗余臂）为对象，在 MuJoCo 中实现从运动学、轨迹规划
 到力矩级柔顺控制的完整链路。每个模块都配可复现的定量验证实验，**723 个测试全部通过**
 （其中 98 项校验的是不随本仓库分发的讲义，clone 环境下自动 skip，详见下文）。
