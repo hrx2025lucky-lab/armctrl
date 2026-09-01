@@ -122,12 +122,43 @@ def run() -> bool:
     return r.returncode == 0
 
 
+
+def check_baseline() -> bool:
+    """⭐ 变异前先跑一次**未改动**的测试，必须全绿。
+
+    为什么这一步不能省：变异验证的逻辑是「改坏 -> 测试红 -> 记为被杀」。
+    但「测试红」有两种原因——**真的被变异抓到**，或者**环境本来就是坏的**。
+    第二种会让每个变异体都「被杀」，报告一片漂亮的全绿，实际什么都没验证。
+
+    实测踩过：在一份新 clone 里跑，因为没找到 mujoco_menagerie，
+    所有变异体都报「被杀」，而失败原因清一色是 ParseXML 找不到模型。
+    """
+    print("基线自检：先跑一次未改动的测试 ...", flush=True)
+    ok, out = run(), ""
+    if ok:
+        print("基线 ✅ 全绿，开始变异")
+        print("", flush=True)
+        return True
+    first = next((l for l in out.splitlines()
+                  if l.startswith(("FAIL:", "ERROR:"))), "")
+    print("")
+    print("❌ 基线就不是绿的，变异验证无意义 —— 先把环境/测试修好。")
+    print(f"   首个失败：{first}")
+    if "ParseXML" in out or "menagerie" in out:
+        print("   看起来是缺 Panda 模型。先确认环境：")
+        print("     PYTHONPATH=. python -c "
+              "'from armctrl.assets import require_panda_xml;"
+              " print(require_panda_xml())'")
+    return False
+
 def main() -> int:
     if not run():
         print("基线就不过，先修基线")
         return 1
     print("基线 ✅ 通过\n")
     killed = survived = 0
+    if not check_baseline():
+        return 2
     for path, old, new, label in MUTANTS:
         src = io.open(path, encoding="utf-8").read()
         n = src.count(old)

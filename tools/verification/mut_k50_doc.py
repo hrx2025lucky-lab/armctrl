@@ -19,6 +19,7 @@
 """
 from __future__ import annotations
 
+import os
 import io
 import pathlib
 import subprocess
@@ -67,11 +68,41 @@ def run_tests() -> tuple[bool, str]:
     r = subprocess.run(
         [PY, "-m", "unittest", *TESTS, "-q"],
         cwd=ROOT, capture_output=True, text=True,
-        env={"PYTHONPATH": ".", "MUJOCO_GL": "egl", "PATH": "/usr/bin:/bin",
-             "HOME": str(pathlib.Path.home()), "PYTHONDONTWRITEBYTECODE": "1"},
+        env={**os.environ, "PYTHONPATH": ".",
+             "MUJOCO_GL": os.environ.get("MUJOCO_GL", "egl"),
+             "PYTHONDONTWRITEBYTECODE": "1"},
         timeout=1800)
     return r.returncode == 0, r.stdout + r.stderr
 
+
+
+def check_baseline() -> bool:
+    """⭐ 变异前先跑一次**未改动**的测试，必须全绿。
+
+    为什么这一步不能省：变异验证的逻辑是「改坏 -> 测试红 -> 记为被杀」。
+    但「测试红」有两种原因——**真的被变异抓到**，或者**环境本来就是坏的**。
+    第二种会让每个变异体都「被杀」，报告一片漂亮的全绿，实际什么都没验证。
+
+    实测踩过：在一份新 clone 里跑，因为没找到 mujoco_menagerie，
+    所有变异体都报「被杀」，而失败原因清一色是 ParseXML 找不到模型。
+    """
+    print("基线自检：先跑一次未改动的测试 ...", flush=True)
+    ok, out = run_tests()
+    if ok:
+        print("基线 ✅ 全绿，开始变异")
+        print("", flush=True)
+        return True
+    first = next((l for l in out.splitlines()
+                  if l.startswith(("FAIL:", "ERROR:"))), "")
+    print("")
+    print("❌ 基线就不是绿的，变异验证无意义 —— 先把环境/测试修好。")
+    print(f"   首个失败：{first}")
+    if "ParseXML" in out or "menagerie" in out:
+        print("   看起来是缺 Panda 模型。先确认环境：")
+        print("     PYTHONPATH=. python -c "
+              "'from armctrl.assets import require_panda_xml;"
+              " print(require_panda_xml())'")
+    return False
 
 def main() -> int:
     only = None
@@ -80,6 +111,8 @@ def main() -> int:
             only = {s.strip() for s in a.split("=", 1)[1].split(",") if s.strip()}
     mutants = [m for m in MUTANTS if only is None or m[0] in only]
     print(f"§10 文档变异验证：{len(mutants)} 个变异体\n" + "=" * 64, flush=True)
+    if not check_baseline():
+        return 2
 
     path = ROOT / DOC
     src = path.read_text(encoding="utf-8")
