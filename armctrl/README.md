@@ -6,7 +6,14 @@
 
 ## 环境
 
-依赖：`mujoco 3.12` · `pinocchio 4.1` · `numpy` · `scipy` · `matplotlib` · `toppra`
+依赖见仓库根的 [`requirements.txt`](../requirements.txt)：
+`mujoco` · `numpy` · `scipy` · `pin`（Pinocchio）必装；
+`toppra`（时间最优参数化）与 `osqp`（MPC 的 QP 求解器）是**惰性导入**，
+不装也能 import 本仓库，但相关模块与测试会失败。
+
+```bash
+pip install -r requirements.txt
+```
 
 机器人模型来自 [mujoco_menagerie](https://github.com/google-deepmind/mujoco_menagerie)
 的 `franka_emika_panda/panda.xml`。该资产仓库独立分发，需自行获取：

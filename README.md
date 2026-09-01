@@ -70,6 +70,36 @@ PYTHONPATH=. MUJOCO_GL=egl python tools/verification/mut_e3_creep.py
 
 ---
 
+## 仿真录像
+
+不想装环境的话，仓库里有 7 段 MuJoCo 录像可以直接看
+（`armctrl/videos/`，都由 `armctrl/demos/` 里的脚本生成，可复现）：
+
+| 录像 | 看什么 |
+|---|---|
+| `impedance.mp4` | 末端被推开后柔顺退让、松手弹回 |
+| `stiffness.mp4` | 同样的外力，刚度不同 ⇒ 偏移量不同 |
+| `collision.mp4` | 动量观测器检测到碰撞后主动退让 |
+| `teaching.mp4` | 拖动示教：人拖着走，松手后复现 |
+| `gripper.mp4` | 完整 pick & place |
+| `gripper_close.mp4` | 夹持特写：指垫接触与夹持力建立 |
+| `planning.mp4` | RRT-Connect 绕开障碍 + 平滑后的执行 |
+
+自己重新生成（`MUJOCO_GL=egl` 用离屏渲染，无显示器也能录）：
+
+```bash
+# 前四个走通用录像入口，--scene 可选 impedance / stiffness / collision / teaching
+MUJOCO_GL=egl PYTHONPATH=. python armctrl/demos/visualize.py --scene impedance
+
+# 后三个由各自的 demo 带 --video
+MUJOCO_GL=egl PYTHONPATH=. python armctrl/demos/demo_gripper.py --video
+MUJOCO_GL=egl PYTHONPATH=. python armctrl/demos/demo_gripper.py --video \
+    --camera grasp_close --out armctrl/videos/gripper_close.mp4
+MUJOCO_GL=egl PYTHONPATH=. python armctrl/demos/demo_planning.py --video
+```
+
+---
+
 ## 模块
 
 | 模块 | 内容 |

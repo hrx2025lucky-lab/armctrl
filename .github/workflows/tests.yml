@@ -45,9 +45,14 @@ jobs:
           PYTHONPATH=. python -c \
             "from armctrl.assets import require_panda_xml; print(require_panda_xml())"
 
+      # ⚠️ 这里**故意不设** MUJOCO_GL。
+      # 第一版照搬本机习惯写了 MUJOCO_GL=egl，结果 runner 上没有 EGL 驱动，
+      # 报 `AttributeError: 'NoneType' object has no attribute 'eglQueryString'`，
+      # 而且是在 import 期就炸，**整个测试套件全部 ImportError**。
+      # 真相是：测试里没有任何一处做渲染（grep Renderer 为空），
+      # 只有 demos 录像才需要 GL。设这个变量纯属画蛇添足。
       - name: 跑全量测试
         env:
-          MUJOCO_GL: egl          # runner 无显示器，必须用离屏渲染
           PYTHONDONTWRITEBYTECODE: "1"
         run: |
           export MUJOCO_MENAGERIE="$HOME/mujoco_menagerie"
@@ -57,8 +62,6 @@ jobs:
       # 一组永远不会红的测试等于没有测试。这一步把实现改坏，确认测试真的会红。
       # 只跑一个批次（约 3 分钟）作为抽样；全部批次要 20 分钟以上。
       - name: 变异抽检（确认测试不是摆设）
-        env:
-          MUJOCO_GL: egl
         run: |
           export MUJOCO_MENAGERIE="$HOME/mujoco_menagerie"
           PYTHONPATH=. python tools/verification/mut_h_splice.py
