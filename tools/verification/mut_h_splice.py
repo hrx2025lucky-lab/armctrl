@@ -139,12 +139,20 @@ def main() -> int:
           + "=" * 64, flush=True)
     if not check_baseline():
         return 2
-    killed, survived = [], []
+    killed, survived, skipped = [], [], []
     doc_m = [m for m in DOC_MUTANTS if only is None or m[0] in only]
     for tag, desc, old, new in mutants + [
             (t, d, o, nw) for t, d, o, nw in doc_m]:
         rel = SCN if (tag, desc, old, new) in mutants else DOC
         path = ROOT / rel
+        if not path.exists():
+            # 讲义（armctrl_讲解/）不随公开仓库分发，文档变异体在 clone
+            # 环境下无从下手。这是**预期情况**，不是失败：
+            # 校验那批文档数字的测试本身也挂了 @requires_docs 会 skip。
+            print(f"{tag} ⏭️  跳过（{rel} 不在本仓库，属非公开讲义）"
+                  f" —— {desc}", flush=True)
+            skipped.append(tag)
+            continue
         src = path.read_text(encoding="utf-8")
         n = src.count(old)
         if n != 1:
@@ -165,7 +173,10 @@ def main() -> int:
             print(f"{tag} ✅ 被杀 —— {desc}\n       {first}", flush=True)
             killed.append(tag)
     print("=" * 64)
-    print(f"杀死 {len(killed)} / 存活 {len(survived)}")
+    print(f"杀死 {len(killed)} / 存活 {len(survived)}"
+          + (f" / 跳过 {len(skipped)}" if skipped else ""))
+    if skipped:
+        print(f"  跳过的是文档变异体（需要非公开讲义）：{', '.join(skipped)}")
     for tag, desc, why in survived:
         print(f"  存活 {tag}: {desc}  ({why})")
     return 0 if not survived else 1
