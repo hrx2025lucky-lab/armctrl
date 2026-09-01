@@ -5,7 +5,9 @@
 
 ```
 armctrl_project/
-├── armctrl/                      实现 + 26 个测试文件
+├── armctrl/                      实现 + 27 个测试文件
+├── tools/verification/           探针与变异验证脚本
+├── requirements.txt              运行依赖
 ├── armctrl_调参台使用说明.md      12 个场景的动手实验与原理
 └── tuner.sh                      交互式调参台
 ```
@@ -21,7 +23,7 @@ armctrl_project/
 git clone https://github.com/google-deepmind/mujoco_menagerie.git
 export MUJOCO_MENAGERIE=/path/to/mujoco_menagerie   # 不设也行，见下
 
-pip install mujoco pin numpy scipy matplotlib toppra osqp
+pip install -r requirements.txt
 ```
 
 `armctrl/assets.py` 按 `MUJOCO_MENAGERIE` → 若干常见位置 → 兜底候选的顺序解析，
@@ -41,8 +43,27 @@ python armctrl/demos/demo_gripper.py      # TCP vs 法兰、夹持力标定、pi
 测试：
 
 ```bash
-PYTHONPATH=. python -m unittest discover -s armctrl/tests -t .
+PYTHONPATH=. MUJOCO_GL=egl python -m unittest discover -s armctrl/tests -t .
 ```
+
+⚠️ 没装 menagerie（或没设 `MUJOCO_MENAGERIE`）时，需要模型的用例会集中报
+`ParseXML: Error opening file ...`。跑一条自检先确认环境：
+
+```bash
+PYTHONPATH=. python -c "from armctrl.assets import require_panda_xml; print(require_panda_xml())"
+```
+
+它要么打印模型路径，要么给出带安装指引的报错。
+
+### 怎么确认这些测试不是摆设
+
+```bash
+PYTHONPATH=. MUJOCO_GL=egl python tools/verification/mut_e3_creep.py
+```
+
+把实现逐条改坏，看测试红不红——**一组永远不会红的测试，和没有测试是一回事**。
+本项目用这个办法实际抓到过「名字很对、内容是空的」测试。
+详见 [`tools/verification/README.md`](tools/verification/README.md)。
 
 ---
 

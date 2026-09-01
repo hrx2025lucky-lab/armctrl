@@ -27,6 +27,7 @@ import numpy as np
 from armctrl.control.ilc import (IterativeLearningController,
                                  JointComplianceModel, zero_phase_lowpass)
 from armctrl.planning.replan import MovingSphere, ReplanSupervisor
+from armctrl.tests._docs import DOCS_ROOT, requires_docs
 
 
 class FirstOrderPlant:
@@ -1148,6 +1149,7 @@ class TestPlantDeflectionRespectsTheTorqueLimit(unittest.TestCase):
 # ================================================ 批次 H：§2.2 那张扫描表
 
 
+@requires_docs
 class TestTheSpliceSweepTableIsReproducible(unittest.TestCase):
     """`12_动态避障.md` 里 `splice_s` 扫描表的每一格都必须能重跑出来。
 
@@ -1179,8 +1181,7 @@ class TestTheSpliceSweepTableIsReproducible(unittest.TestCase):
     @staticmethod
     def _parse():
         """解析 「| splice_s | dp mm | dv mm/s |」三列。"""
-        doc = (Path(__file__).resolve().parents[2]
-               / "armctrl_讲解" / "12_动态避障.md").read_text(encoding="utf-8")
+        doc = (DOCS_ROOT / "12_动态避障.md").read_text(encoding="utf-8")
         body = doc.split("实测效果（`splice_s` 从 0 起逐步调大", 1)[1]
         body = body.split("\n\n", 3)[0] + body.split("\n\n", 3)[1]
         out = {}
