@@ -1,5 +1,7 @@
 # armctrl — 机械臂运动规划与柔顺控制栈
 
+[![tests](https://github.com/hrx2025lucky-lab/armctrl/actions/workflows/tests.yml/badge.svg)](https://github.com/hrx2025lucky-lab/armctrl/actions/workflows/tests.yml)
+
 以 **Franka Panda**（7 自由度冗余臂）为对象，在 MuJoCo 中实现从运动学、轨迹规划
 到力矩级柔顺控制的完整链路。每个模块都配可复现的定量验证实验，**723 个测试全部通过**
 （其中 98 项校验的是不随本仓库分发的讲义，clone 环境下自动 skip，详见下文）。
@@ -99,3 +101,11 @@ PYTHONPATH=. MUJOCO_GL=egl python tools/verification/mut_e3_creep.py
 讲义本身混有个人学习笔记，不随本仓库分发，但**校验它的测试代码保留在仓库里**
 （`armctrl/tests/` 中带 `@requires_docs` 的部分），讲义缺失时这些用例自动 skip
 而不是失败，机制见 [`armctrl/tests/_docs.py`](armctrl/tests/_docs.py)。
+
+---
+
+## 许可
+
+本仓库代码为 MIT，见 [LICENSE](LICENSE)。
+
+⚠️ 机器人模型**不在本仓库内**：Franka Panda 来自 [mujoco_menagerie](https://github.com/google-deepmind/mujoco_menagerie)（Google DeepMind，Apache-2.0），需按上面「快速开始」自行获取。
