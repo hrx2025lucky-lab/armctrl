@@ -8,12 +8,21 @@
 ## 0. 启动
 
 ```bash
-cd "/home/limx/workspace/Roxan_warmup/motion control"
-export PYTHONPATH=.
-MUJOCO_GL=glfw /home/limx/workspace/Roxan_warmup/envs/armctrl/bin/python -m armctrl.tuner
+cd <仓库根>
+./tuner.sh                 # 默认阻抗场景
+./tuner.sh --list          # 列出全部 12 个场景
+./tuner.sh grasp           # 指定场景
 ```
 
+`tuner.sh` 会自动找解释器、设好 `PYTHONPATH` 与 `MUJOCO_GL`，端口被占时也会明确提示。
+想指定解释器：`ARMCTRL_PYTHON=/path/to/venv/bin/python ./tuner.sh`。
+
 浏览器打开 `http://127.0.0.1:8770/`。左上角下拉切换场景，画面可拖动旋转、滚轮缩放。
+
+**让别的机器打开**：`./tuner.sh impedance --host 0.0.0.0`，
+对方访问 `http://<本机IP>:8770/`。
+⚠️ 默认只绑 `127.0.0.1` 是有意为之——**服务没有任何认证**，
+谁连上都能改参数。演示完就关掉。
 
 ### 界面三个区域
 
@@ -26,6 +35,58 @@ MUJOCO_GL=glfw /home/limx/workspace/Roxan_warmup/envs/armctrl/bin/python -m armc
 **读数里橙色的那一项是"理论值"**，由解析式独立算出，不是把实测值抄一遍。
 调滑块时，实测和理论应当一起变、且稳态时重合。**对不上就说明有一方错了**——
 这正是这个工具最有价值的地方。
+
+---
+
+## 0.5 原生窗口按键：那些「画面突然变得很奇怪」的时刻
+
+MuJoCo 原生窗口自带一批可视化开关。**按错了不是报错**，再按一次就恢复。
+
+| 键 | 作用 | 按下去像什么 |
+|---|---|---|
+| `I` | 惯量盒 | 一堆**红色半透明盒子**罩住机械臂，有的比本体还大 |
+| `H` | 凸包 | 每个几何体外套一层多面体 |
+| `C` / `F` | 接触点 / 接触力 | 接触处冒出小点和箭头 |
+| `T` | 透明 | 整机变半透明 |
+| `U` | 执行器 | 显示每个关节的驱动状态 |
+
+### ⭐ `I` 那个红盒子到底是什么
+
+它叫**等效惯量盒**：把连杆换成一个**均匀密度的长方体**，
+要求这个盒子的**质量**和**三个主惯量**跟真实连杆完全一样。画出来的就是它。
+
+半边长由三式反解（$I_{xx}=\frac{m}{3}(b^2+c^2)$ 等）：
+
+$$
+a=\sqrt{\tfrac{3}{2m}(I_{yy}+I_{zz}-I_{xx})},\quad \text{其余轮换}
+$$
+
+**为什么盒子比机械臂还大**：真实连杆是空壳，电机和减速器压在两端，
+**质量离转轴很远**。实心均匀的盒子要凑出同样大的转动惯量，只能把体积撑大。
+
+本模型实测（Panda）：
+
+| 连杆 | 质量 | 等效盒子半边长 (m) | 最长/最短 |
+|---|---|---|---|
+| link1 | 4.971 kg | [0.038 0.061 **0.650**] | 17 |
+| link2 | 0.647 kg | [**0.002** 0.113 0.362] | **182** |
+| link5 | 1.226 kg | [0.012 0.140 0.265] | 21 |
+
+link1 的等效盒子有 **1.3 米长**，而连杆本身远没那么大。
+
+**那几片"纸"**：link2 有一个方向只剩 **2 毫米**，被压成薄片。
+因为它的惯量正好卡在**薄板极限** $I_z = I_x + I_y$（垂直轴定理）上。
+
+### ⭐⭐ 顺带一个和参数辨识直接相关的检查
+
+主惯量必须满足**三角不等式** $I_x + I_y \ge I_z$（三个轮换都要）。
+违反它意味着**没有任何实体能有这种惯量**——物理上不可实现。
+
+实测本模型 11 根连杆**全部满足**，最紧的是 link2，余量只有 `1.7e-6`（几乎贴边）。
+
+> ⭐ 这条不是摆设：辨识（见 `identification/`）辨出来的惯量参数**必须**过这一关。
+> 最小二乘只保证「拟合误差小」，**不保证结果是个真实存在的物体**——
+> 这正是「物理一致性约束」要解决的问题。
 
 ---
 
@@ -376,23 +437,30 @@ L = δ · sin(θ/2) / (1 − cos(θ/2)),      半径 r = L / tan(θ/2)
 ## 附：命令速查
 
 ```bash
-cd "/home/limx/workspace/Roxan_warmup/motion control"
+cd <仓库根>
 export PYTHONPATH=.
-PY=/home/limx/workspace/Roxan_warmup/envs/armctrl/bin/python
 
-# 在线调参台
-MUJOCO_GL=glfw $PY -m armctrl.tuner
-MUJOCO_GL=glfw $PY -m armctrl.tuner --scene planning --port 8899
+# 在线调参台（tuner.sh 会自动找解释器、设好环境变量）
+./tuner.sh                                  # 默认场景
+./tuner.sh --list                           # 列出 12 个场景
+./tuner.sh planning --port 8899             # 换端口
+./tuner.sh impedance --host 0.0.0.0         # ⚠️ 允许别的机器访问，无认证
 
-# 命令行 demo
-$PY armctrl/demos/demo_planning.py          # 规划全流程
-$PY armctrl/demos/demo_topp.py              # 三种时间参数化对照
-$PY -m armctrl.demos.demo_mpc_limits        # MPC 关节限位
+# 命令行 demo（不需要显示器）
+python armctrl/demos/demo_planning.py       # 规划全流程
+python armctrl/demos/demo_topp.py           # 三种时间参数化对照
+python -m armctrl.demos.demo_mpc_limits     # MPC 关节限位
 
 # 录像（同时输出 mp4 与本机能播的 webm）
-MUJOCO_GL=glfw $PY armctrl/demos/demo_planning.py --video
-MUJOCO_GL=glfw $PY armctrl/demos/visualize.py --scene impedance --live
+MUJOCO_GL=egl python armctrl/demos/visualize.py --scene impedance
+MUJOCO_GL=glfw python armctrl/demos/visualize.py --scene impedance --live
 
-# 测试
-$PY -m unittest discover -s armctrl/tests -t .
+# 测试（不要设 MUJOCO_GL：测试不做渲染，硬设 egl 在没有 EGL 驱动的机器上会全崩）
+python -m unittest discover -s armctrl/tests -t .
+
+# 变异验证：把实现改坏，确认测试真的会红
+python tools/verification/mut_e3_creep.py
 ```
+
+> ⭐ 解释器：`tuner.sh` 按 `$ARMCTRL_PYTHON` → `<仓库>/.venv` →
+> `<仓库同级>/envs/armctrl` → `python3` 的顺序找，都可以用环境变量覆盖。
