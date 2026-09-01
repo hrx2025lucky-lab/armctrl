@@ -1,0 +1,45 @@
+name: pages
+
+# 为什么用 Actions 部署而不是「Settings 里选 main /docs」：
+# 那种方式要先去仓库设置里点一下开关。用 actions/configure-pages 的
+# enablement: true，工作流自带的 GITHUB_TOKEN 就能把 Pages 打开，
+# 不需要任何手工步骤——换一台机器、换一个人接手也一样能跑。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write          # 部署 Pages 需要
+  id-token: write       # OIDC，deploy-pages 用它换取部署凭据
+
+# 同一时间只跑一个部署；新的推送不打断正在进行的发布
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true      # 站点没开过的话，这里自动开
+
+      # docs/ 里已有 .nojekyll，静态文件原样发布，不走 Jekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
