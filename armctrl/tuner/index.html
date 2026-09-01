@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>armctrl 调参台</title>
+<link rel="stylesheet" href="/vendor/katex/katex.min.css">
+<script defer src="/vendor/katex/katex.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1319; --panel:#161b23; --panel2:#1b212b; --line:#28303c; --fg:#e9eef5;
+    --dim:#93a0b2; --dim2:#6b7889; --accent:#5aabff; --theory:#ffb74d;
+    --ok:#6bc46f; --warn:#ff8a65; --bad:#ff5f56;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--fg);overflow:hidden;
+       font:15px/1.55 "Noto Sans CJK SC","Source Han Sans SC",-apple-system,
+            "Segoe UI",Roboto,sans-serif;}
+  #app{display:grid;grid-template-columns:1fr 380px;height:100vh}
+  #main{overflow-y:auto;padding:0}
+  #side{overflow-y:auto;border-left:1px solid var(--line);background:var(--panel)}
+  ::-webkit-scrollbar{width:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#2e3846;border-radius:5px}
+  ::-webkit-scrollbar-thumb:hover{background:#3c4859}
+
+  /* ---------------- 顶栏 ---------------- */
+  #top{position:sticky;top:0;z-index:20;background:rgba(15,19,25,.96);
+       backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+       padding:12px 30px 0}
+  #topinner,#content{max-width:900px;margin:0 auto}
+  .toprow{display:flex;align-items:center;gap:14px;margin-bottom:11px}
+  .brand{font-size:14px;font-weight:600;letter-spacing:.3px;white-space:nowrap;
+         color:var(--dim)}
+  select,button{background:#222b37;color:var(--fg);border:1px solid var(--line);
+                border-radius:7px;padding:7px 12px;font-size:14px;font-family:inherit}
+  button{cursor:pointer;transition:background .12s}
+  button:hover{background:#2d3846;border-color:#3f4d61}
+  button.primary{background:#1f4e79;border-color:#2b6ba5}
+  button.primary:hover{background:#2b6ba5}
+  button:disabled{opacity:.35;cursor:default}
+  .viewgrp{display:flex;align-items:center;gap:4px}
+  .viewgrp .vlab{font-size:11px;color:var(--dim2);margin-right:2px}
+  .viewbtn{font-size:12px;padding:5px 9px;background:transparent}
+  .viewbtn.on{background:#453814;border-color:#8b6d20;color:#ffd37a}
+  #sceneSel{min-width:230px}
+  .stat{margin-left:auto;font-size:12px;color:var(--dim2);
+        font-variant-numeric:tabular-nums;white-space:nowrap}
+  .stat b{color:var(--ok);font-weight:500}
+  .stat .off{color:var(--bad)}
+
+  /* ---------------- 步骤条 ---------------- */
+  #stepbar{display:flex;gap:5px;overflow-x:auto;padding-bottom:11px}
+  .sbtn{flex:0 0 auto;background:transparent;border:1px solid var(--line);
+        border-radius:20px;padding:5px 14px;font-size:12.5px;color:var(--dim);
+        cursor:pointer;white-space:nowrap;transition:all .12s}
+  .sbtn:hover{border-color:#44536a;color:var(--fg)}
+  .sbtn.on{background:#1f4e79;border-color:#2b6ba5;color:#fff;font-weight:600}
+  .sbtn .n{opacity:.65;margin-right:5px;font-variant-numeric:tabular-nums}
+  .sbtn.on .n{opacity:.9}
+
+  /* ---------------- 讲解正文 ---------------- */
+  #content{padding:26px 34px 70px;max-width:840px;margin:0 auto}
+  h1{font-size:23px;margin:0 0 6px;font-weight:650;letter-spacing:.2px}
+  .sub{font-size:12.5px;color:var(--dim2);margin-bottom:22px}
+  .teach{font-size:15px;line-height:1.95;color:#d3dcE6;margin-bottom:18px}
+  .teach b,.teach strong{color:#fff;font-weight:600}
+  .teach p{margin:0 0 13px}
+  .teach p:last-child{margin-bottom:0}
+  .mathbox{background:#0b0f15;border:1px solid var(--line);border-radius:9px;
+           padding:17px 20px;margin:18px 0;overflow-x:auto;text-align:center}
+  .mathbox .katex{font-size:1.16em}
+  .mathbox .katex-display{margin:.45em 0}
+  .mathbox .katex-display:first-child{margin-top:0}
+  .mathbox .katex-display:last-child{margin-bottom:0}
+
+  h2.sec{font-size:12px;color:var(--dim2);margin:26px 0 11px;font-weight:700;
+         text-transform:uppercase;letter-spacing:1.2px;display:flex;
+         align-items:center;gap:9px}
+  h2.sec::after{content:'';flex:1;height:1px;background:var(--line)}
+  .watch{list-style:none;padding:0;margin:0}
+  .watch li{position:relative;padding:9px 0 9px 30px;font-size:14px;
+            line-height:1.8;color:#c8d3df;border-bottom:1px solid #1b222c}
+  .watch li:last-child{border-bottom:none}
+  .watch li b,.watch li strong{color:#fff}
+  .watch li::before{content:counter(w);counter-increment:w;position:absolute;
+        left:0;top:10px;width:19px;height:19px;border-radius:50%;
+        background:#22303f;color:var(--accent);font-size:11px;font-weight:700;
+        display:flex;align-items:center;justify-content:center}
+  .watch{counter-reset:w}
+  #note{font-size:13px;color:var(--theory);margin-top:16px;min-height:1em}
+
+  .nav{display:flex;gap:11px;margin-top:34px;align-items:center}
+  .nav .grow{flex:1}
+
+  .hintbox{background:#141a22;border:1px solid var(--line);border-left:3px solid var(--accent);
+           border-radius:0 8px 8px 0;padding:12px 15px;font-size:13px;
+           line-height:1.75;color:var(--dim);margin-bottom:20px}
+  .hintbox b{color:var(--fg)}
+
+  /* ---------------- 侧栏 ---------------- */
+  .spad{padding:16px 16px 22px}
+  h3{font-size:11px;color:var(--dim2);margin:0 0 11px;font-weight:700;
+     text-transform:uppercase;letter-spacing:1.1px}
+  h3.mt{margin-top:24px}
+  .ro{background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+      padding:8px 11px;margin-bottom:7px;position:relative}
+  .ro .k{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;
+         text-overflow:ellipsis}
+  .ro .v{font-size:21px;font-variant-numeric:tabular-nums;margin-top:1px;
+         font-weight:500;line-height:1.2}
+  .ro.theory{border-color:#4a3c22}
+  .ro.theory .v{color:var(--theory)}
+  .ro.truth{border-color:#3d3358}
+  .ro.truth .v{color:#b39ddb}
+  .ro.internal{border-color:#333a45}
+  .ro.internal .v{color:#93a0b2}
+  .ro .tag{position:absolute;right:9px;bottom:7px;font-size:9px;letter-spacing:.4px;
+           padding:1px 5px;border-radius:4px;opacity:.85}
+  .tag.theory{color:var(--theory);background:rgba(255,183,77,.13)}
+  .tag.truth{color:#b39ddb;background:rgba(179,157,219,.13)}
+  .tag.internal{color:#93a0b2;background:rgba(147,160,178,.12)}
+  #srcnote{font-size:11px;color:var(--dim2);line-height:1.7;margin-top:9px;
+           background:var(--panel2);border:1px solid var(--line);
+           border-radius:7px;padding:9px 11px}
+  #srcnote b{color:var(--fg)}
+  #srcnote i{font-style:normal;padding:1px 5px;border-radius:4px;font-size:9.5px}
+  .ro .u{font-size:11px;color:var(--dim);margin-left:3px;font-weight:400}
+  .ro .cmp{position:absolute;right:9px;top:8px;font-size:10.5px;
+           font-variant-numeric:tabular-nums;padding:2px 6px;border-radius:5px}
+  .cmp.good{color:var(--ok);background:rgba(107,196,111,.14)}
+  .cmp.mid{color:var(--theory);background:rgba(255,183,77,.14)}
+  .cmp.bad{color:var(--bad);background:rgba(255,95,86,.14)}
+
+  .param{margin-bottom:16px}
+  .param .head{display:flex;justify-content:space-between;align-items:baseline;gap:7px}
+  .param .name{font-size:13.5px}
+  .param .sym{color:var(--theory);font-size:12px;margin-left:5px}
+  .param .val{font-variant-numeric:tabular-nums;color:var(--accent);font-size:13.5px;
+              white-space:nowrap}
+  input[type=range]{width:100%;accent-color:var(--accent);height:20px;margin:5px 0 0}
+  .param .eff{font-size:11.5px;margin-top:6px;line-height:1.65;color:#c3d4e5;
+              background:rgba(90,171,255,.08);border-left:2px solid var(--accent);
+              padding:6px 8px;border-radius:0 5px 5px 0}
+  .param .eff b{color:#fff}
+  .noparam{font-size:12.5px;color:var(--dim2);line-height:1.7;
+           background:var(--panel2);border:1px dashed var(--line);
+           border-radius:8px;padding:12px 13px}
+
+  /* ---------------- 手动干预 ---------------- */
+  .manual{margin-top:22px;border:1px solid var(--line);border-radius:8px;
+          background:var(--panel2)}
+  .manual>summary{cursor:pointer;font-size:11px;color:var(--theory);
+                  font-weight:700;letter-spacing:.6px;padding:11px 12px;
+                  list-style:none;user-select:none}
+  .manual>summary::-webkit-details-marker{display:none}
+  .manual[open]>summary{border-bottom:1px solid var(--line)}
+  .manual .mnote{font-size:11.5px;color:var(--dim);line-height:1.75;
+                 padding:10px 12px 0}
+  .manual .mnote b{color:#dbe6f2}
+  .mgrp{padding:14px 12px 4px;border-top:1px solid var(--line);margin-top:12px}
+  .mgrp:first-of-type{border-top:none;margin-top:0}
+  .mtitle{font-size:12.5px;color:#fff;font-weight:700;margin-bottom:9px}
+  .mrow{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+  .mrow button{flex:1 1 auto;font-size:11.5px;padding:6px 8px}
+  .mchk{display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer}
+  .mchk input{width:15px;height:15px;accent-color:var(--theory);cursor:pointer}
+  .mread{font-size:11.5px;color:var(--dim);margin:0 0 14px;line-height:1.7}
+  .mread b{color:var(--accent);font-variant-numeric:tabular-nums}
+  .mread .dim{color:var(--dim2)}
+  .manual .warn{color:var(--theory);display:block;margin-top:5px}
+  .jrow{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .jrow .jn{width:22px;font-size:11px;color:var(--dim);flex:0 0 auto}
+  .jrow input[type=range]{flex:1 1 auto;margin:0;accent-color:var(--theory)}
+  .jrow .jv{width:58px;text-align:right;font-size:11px;color:var(--dim);
+            font-variant-numeric:tabular-nums;flex:0 0 auto}
+
+  /* ---------------- 力矩条 ---------------- */
+  .bar-row{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+  .bname{width:21px;font-size:11px;color:var(--dim);flex:0 0 auto}
+  .btrack{flex:1 1 auto;height:14px;background:#10151c;border-radius:3px;
+          position:relative;overflow:hidden;border:1px solid #222a35}
+  .bzero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#3a4553}
+  .bfill{position:absolute;top:1px;bottom:1px;background:var(--accent);border-radius:2px}
+  .bfill.warn{background:var(--theory)}
+  .bfill.sat{background:var(--bad)}
+  .bval{width:50px;text-align:right;font-size:11px;
+        font-variant-numeric:tabular-nums;color:var(--dim);flex:0 0 auto}
+  .blim{width:38px;text-align:right;font-size:10px;color:var(--dim2);flex:0 0 auto}
+
+  canvas{width:100%;background:#0b0f15;border:1px solid var(--line);
+         border-radius:8px;display:block}
+  .legend{display:flex;gap:11px;flex-wrap:wrap;font-size:11px;color:var(--dim);
+          margin:0 0 6px}
+  .legend i{display:inline-block;width:13px;height:2px;vertical-align:middle;
+            margin-right:5px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="main">
+    <div id="top">
+      <div class="toprow">
+        <span class="brand">armctrl 调参台</span>
+        <select id="sceneSel"></select>
+        <button class="primary" id="resetBtn">重置</button>
+        <button id="pauseBtn">暂停</button>
+        <span class="viewgrp">
+          <span class="vlab">视角</span>
+          <button class="viewbtn on" id="overviewBtn" title="外部全景视角">全景</button>
+          <button class="viewbtn" id="wristBtn" title="夹爪上的眼在手相机">夹爪相机</button>
+        </span>
+        <span class="viewgrp">
+          <span class="vlab">标记</span>
+          <button class="viewbtn" id="contactBtn"
+                  title="MuJoCo 的接触点（橙色圆盘）与接触力（淡青箭头）。默认关闭：夹爪合拢后有 32 个接触点，叠在一起会把指尖和工件糊住">接触点</button>
+        </span>
+        <span class="stat" id="stat">--</span>
+      </div>
+      <div id="stepbar"></div>
+    </div>
+    <div id="content">
+      <h1 id="stepTitle"></h1>
+      <div class="sub" id="stepSub"></div>
+      <div class="hintbox" id="viewerHint">
+        <b>画面在另一个窗口。</b>MuJoCo 原生窗口里可以用鼠标左键拖拽转视角、
+        滚轮缩放、右键平移；按住 <b>Ctrl + 右键</b>直接拖拽机械臂施加外力。
+        接触点与接触力<b>默认关闭</b>——夹爪合拢后有 32 个接触点，
+        32 个橙色圆盘叠在一起会把指垫和工件棱线全糊住。想看接触点长在哪，
+        点顶部<b>「接触点」</b>按钮，或聚焦 MuJoCo 窗口后按 <b>V</b>。
+        顶部可切换<b>全景 / 夹爪相机</b>，
+        聚焦 MuJoCo 窗口后按 <b>C</b> 也能切换。
+        <b>夹爪相机画面是真实渲染，但当前 PBVS 仍使用模拟的三维位姿，
+        尚未从 RGB 像素做目标检测。</b>
+        关掉那个窗口就会退出整个调参台。
+      </div>
+      <div class="teach" id="teach"></div>
+      <div class="mathbox" id="math" style="display:none"></div>
+      <div class="teach" id="teach2"></div>
+      <div id="watchWrap" style="display:none">
+        <h2 class="sec">动手看什么</h2>
+        <ol class="watch" id="watch"></ol>
+      </div>
+      <div id="note"></div>
+      <div class="nav">
+        <button id="prevBtn">← 上一步</button>
+        <button class="primary" id="nextBtn">下一步 →</button>
+        <span class="grow"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="side">
+    <div class="spad">
+      <h3>本步骤要看的数</h3>
+      <div id="focus"></div>
+      <div id="srcnote">
+        <b>数字的来源不同，可信度也不同。</b><br>
+        无标记 = 实测量；
+        <i class="tag theory">理论</i> 独立解析算出，<b>不读被测实现的任何中间量</b>，
+        只有它能用来验证实现对不对；
+        <i class="tag truth">真值</i> 仿真的上帝视角，<b>真机上没有这一路</b>；
+        <i class="tag internal">自报</i> 实现自己报的量，<b>不能用来自证</b>。
+      </div>
+      <h3 class="mt">本步骤能调的参数</h3>
+      <div id="params"></div>
+
+      <details id="manualWrap" class="manual">
+        <summary>▸ 手动干预 · 夹爪 / 扰动 / 摆位（任何步骤都能用）</summary>
+        <div class="mnote">
+          这三路都<b>不属于任何控制律</b>，是给你随时插手用的。
+          它们和上面的参数是两回事：上面调的是「控制器怎么算」，
+          这里做的是「我直接动一下机器人」。
+        </div>
+
+        <div class="mgrp">
+          <div class="mtitle">① 夹爪开合</div>
+          <div class="param">
+            <div class="head"><span class="name">开口宽度</span>
+              <span class="val" id="mv_grip">--</span></div>
+            <input type="range" id="m_grip" min="0" max="0.08" step="0.0005">
+            <div class="eff">
+              直接写夹爪的位置伺服指令，<b>不经过手臂力矩控制律</b>。
+              在 MuJoCo 里能看见两根手指张合。
+              <span id="m_gripLock" class="warn" style="display:none">
+                本场景（抓取）自己接管了夹爪，手动滑块已停用——
+                否则位置指令会顶掉夹持力控制，工件当场掉下去。</span>
+            </div>
+          </div>
+          <div class="mrow">
+            <button id="m_gripOpen">张开</button>
+            <button id="m_gripClose">闭合</button>
+            <button id="m_gripAuto">跟随场景</button>
+          </div>
+          <div class="mread">实际开口 <b id="mi_gripActual">--</b> mm
+            <span class="dim">（指令与实际不一致 = 夹到东西了）</span></div>
+        </div>
+
+        <div class="mgrp">
+          <div class="mtitle">② 关节扰动力矩</div>
+          <div class="mnote">
+            给某个关节加一个<b>外部</b>力矩，相当于「有人在掰这个关节」。
+            ⚠️ 它<b>不是</b>把控制量改掉：控制量 τ 仍由控制律算，条形图显示的还是控制器出的力。
+            这正是它的用处——<b>给同一个已知扰动，看不同控制方法各自怎么把它压回去</b>。
+          </div>
+          <div class="param">
+            <div class="head"><span class="name">作用关节</span></div>
+            <select id="m_distJoint" style="width:100%;margin-top:5px">
+              <option value="0">不施加</option>
+              <option value="1">J1 底座回转</option>
+              <option value="2">J2 大臂俯仰</option>
+              <option value="3">J3 上臂回转</option>
+              <option value="4">J4 肘部</option>
+              <option value="5">J5 前臂回转</option>
+              <option value="6">J6 腕部俯仰</option>
+              <option value="7">J7 腕部回转</option>
+            </select>
+          </div>
+          <div class="param">
+            <div class="head"><span class="name">扰动力矩</span>
+              <span class="val" id="mv_distTau">0.00 N·m</span></div>
+            <input type="range" id="m_distTau" min="-30" max="30" step="0.25" value="0">
+            <div class="eff">
+              先把力矩拉到 10 N·m 看末端被推歪多少，再切到另一个控制方法、
+              用<b>同样</b>的扰动对比。这比看标称轨迹靠谱得多——
+              标称同模型下各方法本来就该差不多。
+            </div>
+          </div>
+          <div class="mrow"><button id="m_distZero">扰动归零</button></div>
+        </div>
+
+        <div class="mgrp">
+          <div class="mtitle">③ 运动学摆位（直接改关节角）</div>
+          <div class="mnote">
+            ⚠️ 这<b>不是控制</b>，是「用手把机械臂搬成这个姿势」：打开后<b>不做动力学积分</b>，
+            直接写关节角。所以摆位时的力矩、误差读数<b>没有物理意义</b>，故意不更新。<br>
+            用法：摆一个歪姿势 → <b>关掉摆位</b> → 看控制器怎么把它拉回去。
+          </div>
+          <div class="mrow">
+            <label class="mchk"><input type="checkbox" id="m_poseOn"> 打开摆位模式</label>
+          </div>
+          <div id="m_poseBox" style="display:none"></div>
+          <div class="mread">TCP 位置
+            <b id="mi_tcp">--</b>
+            <span class="dim">（末端在世界系的 x / y / z，单位 m）</span></div>
+        </div>
+      </details>
+      <div id="barWrap" style="display:none">
+        <h3 class="mt" id="barTitle">关节力矩</h3>
+        <div id="bars"></div>
+      </div>
+      <h3 class="mt">曲线</h3>
+      <div class="legend" id="legend"></div>
+      <canvas id="plot" height="150"></canvas>
+      <details style="margin-top:24px">
+        <summary style="cursor:pointer;font-size:11px;color:var(--dim2);
+                        font-weight:700;text-transform:uppercase;letter-spacing:1.1px;
+                        list-style:none;user-select:none">▸ 全部读数</summary>
+        <div id="allro" style="margin-top:11px"></div>
+      </details>
+    </div>
+  </div>
+
+</div>
+<script>
+const $ = s => document.querySelector(s);
+let META=null, TRACES=[], HISTORY=[], PAUSED=false, CONTACTS=false;
+let BARS=[], ROMETA=[], STEPS=[], STEP=0;
+
+async function post(url, body){
+  await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+                   body:JSON.stringify(body||{})});
+}
+function fmt(v,d){
+  if(v===null||v===undefined||Number.isNaN(v)) return '--';
+  if(d!==undefined&&d!==null) return v.toFixed(d);
+  const a=Math.abs(v);
+  if(a>=1000) return v.toFixed(0);
+  if(a>=100) return v.toFixed(1);
+  if(a>=1) return v.toFixed(2);
+  return v.toFixed(3);
+}
+function fmtAxis(v,span){
+  const d=span>=100?0:span>=10?1:span>=1?2:span>=0.1?3:span>=0.01?4:5;
+  return v.toFixed(d);
+}
+// 讲解正文里用 \n\n 分段，比一行 <br> 更好读。
+// 顺便把 **粗体** 这种 Markdown 记号转成 <b>：讲解文案里大量用它做重点标记，
+// 不转的话满屏都是裸露的星号。
+function md(t){
+  return t.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+}
+function para(t){
+  return t.split(/\n\n+/).map(x=>`<p>${md(x).replace(/\n/g,'<br>')}</p>`).join('');
+}
+// 行内 $...$ 由 KaTeX 渲染，其余按 HTML 走。
+//
+// 这里有个必须处理的坑：我们读的是 el.innerHTML，浏览器已经把文本里的
+// `<` `>` `&` 转义成了 `&lt;` `&gt;` `&amp;`。直接把这段喂给 KaTeX，
+// 形如 `$\zeta < 1$` 的公式到 KaTeX 手里变成了 `\zeta &lt; 1`，
+// 它不认识 `&`，整条公式渲染失败（页面上显示成红色源码）。
+// 所以送进 KaTeX 之前必须先把实体还原成真字符。
+function unescapeEntities(t){
+  return t.replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+          .replace(/&quot;/g,'"').replace(/&#39;/g,"'")
+          .replace(/&amp;/g,'&');       // &amp; 必须最后还原，否则会二次解码
+}
+function inlineMath(el){
+  if(!window.katex) return;
+  el.innerHTML = el.innerHTML.replace(/\$([^$]+?)\$/g, (m,tex)=>{
+    try{ return katex.renderToString(unescapeEntities(tex),{throwOnError:false}); }
+    catch(e){ return m; }
+  });
+}
+
+// ---------------------------------------------------------------- 步骤
+function buildSteps(){
+  const bar=$('#stepbar'); bar.innerHTML='';
+  STEPS.forEach((st,i)=>{
+    const b=document.createElement('button');
+    b.className='sbtn'+(i===STEP?' on':'');
+    b.innerHTML=`<span class="n">${i+1}</span>${st.title}`;
+    b.onclick=()=>{ STEP=i; renderStep(); };
+    bar.appendChild(b);
+  });
+}
+
+function renderStep(){
+  const st=STEPS[STEP];
+  document.querySelectorAll('.sbtn').forEach((b,i)=>
+    b.classList.toggle('on', i===STEP));
+  if(!st){
+    $('#stepTitle').textContent=META.title;
+    $('#teach').innerHTML=para(META.intro||'');
+    $('#math').style.display='none'; $('#teach2').innerHTML='';
+    $('#watchWrap').style.display='none';
+    buildParams(META.params); buildFocus([]);
+    return;
+  }
+  $('#stepTitle').textContent=st.title;
+  $('#stepSub').textContent=`${META.title} · 第 ${STEP+1} / ${STEPS.length} 步`;
+
+  const t=$('#teach'); t.innerHTML=para(st.teach||''); inlineMath(t);
+
+  const mb=$('#math');
+  if(st.math && st.math.length){
+    mb.style.display='';
+    mb.innerHTML = st.math.map(tex=>{
+      try{ return katex.renderToString(tex,{displayMode:true,throwOnError:false}); }
+      catch(e){ return `<code>${tex}</code>`; }
+    }).join('');
+  } else mb.style.display='none';
+
+  const t2=$('#teach2'); t2.innerHTML=st.teach2?para(st.teach2):''; inlineMath(t2);
+
+  if(st.watch && st.watch.length){
+    $('#watchWrap').style.display='';
+    $('#watch').innerHTML=st.watch.map(w=>`<li>${md(w)}</li>`).join('');
+    document.querySelectorAll('#watch li').forEach(inlineMath);
+  } else $('#watchWrap').style.display='none';
+
+  // 只放出本步骤相关的滑块，其余隐藏 —— 这是把密度降下来的关键
+  buildParams(META.params.filter(p=>(st.params||[]).includes(p.key)));
+  buildFocus(st.focus||[]);
+  // 步骤写进 URL：刷新后停在原处，也方便把某一步直接发给别人
+  history.replaceState(null,'',`#${META.name}/${STEP+1}`);
+  $('#prevBtn').disabled = STEP===0;
+  $('#nextBtn').disabled = STEP===STEPS.length-1;
+  $('#content').scrollTop=0;
+  $('#main').scrollTop=0;
+}
+
+// ---------------------------------------------------------------- 参数
+function buildParams(list){
+  const box=$('#params'); box.innerHTML='';
+  if(!list.length){
+    box.innerHTML='<div class="noparam">这一步只讲原理，没有要调的参数。'
+                 +'读完点「下一步」。</div>';
+    return;
+  }
+  for(const p of list){
+    const d=document.createElement('div'); d.className='param';
+    const sym=p.symbol?`<span class="sym">${p.symbol}</span>`:'';
+    if(p.kind==='choice'){
+      d.innerHTML=`<div class="head"><span class="name">${p.label}${sym}</span></div>`;
+      const sel=document.createElement('select');
+      for(const c of p.choices){
+        const o=document.createElement('option'); o.value=c; o.textContent=c;
+        sel.appendChild(o);
+      }
+      sel.value=META.values[p.key];
+      sel.onchange=()=>post('/set',{[p.key]:sel.value});
+      sel.style.width='100%'; sel.style.marginTop='5px';
+      d.appendChild(sel);
+    }else{
+      const v=Number(META.values[p.key]);
+      d.innerHTML=`<div class="head"><span class="name">${p.label}${sym}</span>
+        <span class="val" id="v_${p.key}">${fmt(v)}${p.unit?' '+p.unit:''}</span></div>`;
+      const r=document.createElement('input');
+      r.type='range'; r.min=p.lo; r.max=p.hi; r.step=p.step; r.value=v;
+      // restart 参数每动一下都要重新规划，所以等松手再发
+      const send=()=>{ META.values[p.key]=Number(r.value);
+                       post('/set',{[p.key]:Number(r.value)}); };
+      r.oninput=()=>{
+        $('#v_'+p.key).textContent=fmt(Number(r.value))+(p.unit?' '+p.unit:'');
+        if(!p.restart) send();
+      };
+      r.onchange=()=>{ if(p.restart) send(); };
+      d.appendChild(r);
+    }
+    if(p.effect){
+      const e=document.createElement('div'); e.className='eff'; e.innerHTML=p.effect;
+      d.appendChild(e);
+    }
+    box.appendChild(d);
+  }
+}
+
+// ---------------------------------------------------------------- 读数
+// 读数按**来源**分色。这不是装饰：把「独立算出来的理论值」和
+// 「实现自己报的数」混成一个颜色，等于把「oracle 必须独立」这条纪律抹掉。
+const SRC_LABEL = {theory:'理论', truth:'真值', internal:'自报'};
+function roCard(r,big){
+  const src = r.source || (r.theory?'theory':'measured');
+  const tag = SRC_LABEL[src] ? `<div class="tag ${src}">${SRC_LABEL[src]}</div>` : '';
+  return `<div class="ro ${src}" ${r.help?`title="${r.help}"`:''}>
+    <div class="k">${r.label}</div>
+    <div class="v" style="${big?'':'font-size:16px'}">
+      <span id="${big?'f_':'a_'}${r.key}">--</span><span class="u">${r.unit}</span></div>
+    ${r.compare_with?`<div class="cmp" id="c_${r.key}"></div>`:''}${tag}</div>`;
+}
+function buildFocus(keys){
+  const box=$('#focus');
+  const list=keys.map(k=>ROMETA.find(r=>r.key===k)).filter(Boolean);
+  box.innerHTML=list.length?list.map(r=>roCard(r,true)).join('')
+    :'<div class="noparam">这一步没有特别要盯的数。</div>';
+}
+function buildAllReadouts(){
+  $('#allro').innerHTML=ROMETA.map(r=>roCard(r,false)).join('');
+}
+function updateReadouts(latest){
+  for(const r of ROMETA){
+    const a=document.getElementById('a_'+r.key), f=document.getElementById('f_'+r.key);
+    const txt=fmt(latest[r.key],r.digits);
+    if(a) a.textContent=txt;
+    if(f) f.textContent=txt;
+    if(!r.compare_with) continue;
+    const c=document.getElementById('c_'+r.key); if(!c) continue;
+    const x=latest[r.key], y=latest[r.compare_with];
+    if(x===null||y===null||x===undefined||y===undefined){c.textContent='';continue;}
+    const den=Math.max(Math.abs(x),Math.abs(y));
+    if(den<1e-9){c.textContent='';continue;}
+    const rel=Math.abs(x-y)/den*100;
+    c.textContent='偏差 '+rel.toFixed(1)+'%';
+    c.className='cmp '+(rel<5?'good':rel<20?'mid':'bad');
+  }
+}
+
+// ---------------------------------------------------------------- 力矩条
+function buildBars(meta){
+  BARS=meta.bars||[];
+  const wrap=$('#barWrap'), box=$('#bars');
+  if(!BARS.length){ wrap.style.display='none'; return; }
+  const b=BARS[0]; wrap.style.display='';
+  $('#barTitle').textContent=b.label;
+  box.innerHTML='';
+  const n=b.names.length||7;
+  for(let i=0;i<n;i++){
+    const row=document.createElement('div'); row.className='bar-row';
+    row.innerHTML=`<span class="bname">${b.names[i]||('#'+(i+1))}</span>
+      <div class="btrack"><div class="bzero"></div>
+        <div class="bfill" id="bf_${i}" style="left:50%;width:0%"></div></div>
+      <span class="bval" id="bv_${i}">--</span>
+      <span class="blim" id="bl_${i}"></span>`;
+    box.appendChild(row);
+  }
+}
+function updateBars(latest){
+  if(!BARS.length) return;
+  const b=BARS[0], vals=latest[b.key], lims=b.limit_key?latest[b.limit_key]:null;
+  if(!Array.isArray(vals)) return;
+  for(let i=0;i<vals.length;i++){
+    const fill=document.getElementById('bf_'+i);
+    const vEl=document.getElementById('bv_'+i), lEl=document.getElementById('bl_'+i);
+    if(!fill) continue;
+    const v=vals[i]===null?0:vals[i];
+    // 每根柱子按**自己的限幅**归一化：不同关节限幅不同（87 vs 12 N·m），
+    // 统一量程会让小关节的柱子永远看不见，而真正要看的是「离饱和多远」。
+    const lim=(lims&&lims[i])?Math.abs(lims[i]):Math.max(Math.abs(v),1e-9);
+    const frac=Math.max(-1,Math.min(1,v/lim)), half=Math.abs(frac)*50;
+    fill.style.left=(frac>=0?50:50-half)+'%';
+    fill.style.width=half+'%';
+    const pct=Math.abs(frac);
+    fill.className='bfill'+(pct>0.95?' sat':pct>0.8?' warn':'');
+    if(vEl) vEl.textContent=fmt(v,Math.abs(v)>=10?1:2);
+    if(lEl&&lims&&lims[i]) lEl.textContent='/'+Math.abs(lims[i]).toFixed(0);
+  }
+}
+
+// ---------------------------------------------------------------- 曲线
+function buildLegend(meta){
+  TRACES=meta.traces;
+  $('#legend').innerHTML=meta.traces.map(t=>
+    `<span><i style="background:${t.color}"></i>${t.label}${t.unit?' ('+t.unit+')':''}</span>`
+  ).join('');
+}
+function draw(){
+  const c=$('#plot'), ctx=c.getContext('2d');
+  const w=c.width=c.clientWidth*devicePixelRatio;
+  const h=c.height=150*devicePixelRatio;
+  ctx.clearRect(0,0,w,h); ctx.fillStyle='#0b0f15'; ctx.fillRect(0,0,w,h);
+  if(HISTORY.length<2||!TRACES.length) return;
+  const pad=40*devicePixelRatio, padR=8*devicePixelRatio;
+  const t0=HISTORY[0].t, t1=HISTORY[HISTORY.length-1].t;
+  const span=Math.max(t1-t0,1e-6);
+  const axes={};
+  for(const tr of TRACES){
+    const a=axes[tr.axis]||(axes[tr.axis]={lo:Infinity,hi:-Infinity});
+    for(const p of HISTORY){
+      const v=p[tr.key];
+      if(v===null||v===undefined) continue;
+      if(v<a.lo) a.lo=v; if(v>a.hi) a.hi=v;
+    }
+  }
+  for(const k in axes){
+    const a=axes[k];
+    if(!isFinite(a.lo)){a.lo=-1;a.hi=1;}
+    // 信号恒定时量程会塌成 0。绝对判据不够：值是 -60 而量程 1e-7 时，
+    // 刻度会全部打印成 -60.00000 这种看不出差别的数。改用相对判据。
+    const scale=Math.max(Math.abs(a.lo),Math.abs(a.hi),1e-6);
+    if(a.hi-a.lo < scale*1e-4){
+      const pad=scale*0.05;
+      a.lo-=pad; a.hi+=pad;
+    }
+    const m=(a.hi-a.lo)*0.12; a.lo-=m; a.hi+=m;
+  }
+  const primary=axes[TRACES[0].axis];
+  ctx.strokeStyle='#1d242e'; ctx.lineWidth=1*devicePixelRatio;
+  ctx.fillStyle='#6b7889'; ctx.font=`${10.5*devicePixelRatio}px sans-serif`;
+  for(let i=0;i<=4;i++){
+    const y=pad*0.3+(h-pad)*i/4;
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(w-padR,y); ctx.stroke();
+    ctx.fillText(fmtAxis(primary.hi-(primary.hi-primary.lo)*i/4,primary.hi-primary.lo),
+                 3*devicePixelRatio, y+4*devicePixelRatio);
+  }
+  for(const tr of TRACES){
+    const a=axes[tr.axis];
+    ctx.strokeStyle=tr.color; ctx.lineWidth=1.8*devicePixelRatio;
+    ctx.setLineDash(tr.dashed?[5*devicePixelRatio,4*devicePixelRatio]:[]);
+    ctx.beginPath();
+    let started=false;
+    for(const p of HISTORY){
+      const v=p[tr.key];
+      if(v===null||v===undefined){started=false;continue;}
+      const x=pad+(w-pad-padR)*(p.t-t0)/span;
+      const y=pad*0.3+(h-pad)*(a.hi-v)/(a.hi-a.lo);
+      if(started) ctx.lineTo(x,y); else {ctx.moveTo(x,y); started=true;}
+    }
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+}
+
+// ---------------------------------------------------------------- 轮询
+// 只拉「比我已有的更新」的那几条，本地自己维护滑动窗口。
+// 全量重传 600 条历史 ≈ 285 KB，一秒 8 次就是 2.4 MB/s；
+// 服务端序列化时会把 GIL 从仿真线程手里抢走，浏览器这头也要反复解析大 JSON，
+// 结果就是两边一起卡。增量之后每次只有几条。
+const HIST_MAX = 600;
+let SEEN = -1;
+
+async function poll(){
+  try{
+    const s=await (await fetch('/state?since='+SEEN)).json();
+    if(s.full || s.seq < SEEN){
+      // 服务端重置或换了场景，序号归零，本地窗口作废
+      HISTORY = s.history || [];
+    }else if(s.history && s.history.length){
+      HISTORY = HISTORY.concat(s.history);
+      if(HISTORY.length > HIST_MAX) HISTORY = HISTORY.slice(-HIST_MAX);
+    }
+    SEEN = s.seq;
+    updateReadouts(s.latest); updateBars(s.latest);
+    updateManual(s);
+    $('#note').textContent=s.note||'';
+    $('#stat').innerHTML = s.alive
+      ? `t = ${s.sim_time.toFixed(1)} s &nbsp; 实时 ${s.realtime.toFixed(2)}× &nbsp; <b>原生窗口运行中</b>`
+      : `<span class="off">原生窗口已关闭</span>`;
+    PAUSED=s.paused;
+    $('#pauseBtn').textContent=PAUSED?'继续':'暂停';
+    const view=s.camera_mode||'overview';
+    $('#overviewBtn').classList.toggle('on',view==='overview');
+    $('#wristBtn').classList.toggle('on',view==='wrist');
+    CONTACTS=!!s.show_contacts;
+    $('#contactBtn').classList.toggle('on',CONTACTS);
+    if(s.manual && s.manual.pose_on)
+      $('#stat').innerHTML += ' &nbsp; <b style="color:#ffb74d">摆位模式（物理已暂停）</b>';
+    draw();
+  }catch(e){ $('#stat').innerHTML='<span class="off">服务端已退出</span>'; }
+}
+
+// ---------------------------------------------------------------- 加载
+async function loadMeta(){
+  const m=await (await fetch('/meta')).json();
+  META=m.current;
+  const sel=$('#sceneSel');
+  if(!sel.options.length){
+    for(const s of m.scenes){
+      const o=document.createElement('option');
+      o.value=s.name; o.textContent=s.title; sel.appendChild(o);
+    }
+    sel.onchange=async()=>{
+      await post('/scene',{name:sel.value});
+      HISTORY=[]; SEEN=-1; STEP=0;
+      setTimeout(loadMeta,900);
+    };
+  }
+  sel.value=META.name;
+  ROMETA=META.readouts; STEPS=META.steps||[];
+  // 支持用 #场景名/步号 直接定位到某一步
+  const _h=/^#(\w+)\/(\d+)$/.exec(location.hash||'');
+  STEP = (_h && _h[1]===META.name)
+    ? Math.min(Math.max(+_h[2]-1,0), Math.max(STEPS.length-1,0)) : 0;
+  buildLegend(META); buildBars(META); buildAllReadouts();
+  buildSteps(); renderStep();
+  buildManual(m);
+}
+
+// ---------------------------------------------------------------- 手动干预
+// 这三路不进 META.values，也不受 Step 门控：它们不属于任何控制律，
+// 是"我直接动一下机器人"，所以任何场景任何步骤都常驻。
+let MANUAL={grip:null,dist_joint:0,dist_tau:0,pose_on:false,pose_q:[]};
+let JRANGE=[], GRANGE=[0,0.08], POSE_BUILT=false;
+const JNAME=['J1','J2','J3','J4','J5','J6','J7'];
+
+function mpost(patch){ Object.assign(MANUAL,patch); return post('/manual',patch); }
+
+function buildManual(m){
+  MANUAL = m.manual || MANUAL;
+  JRANGE = m.joint_range || [];
+  GRANGE = m.grip_range || [0,0.08];
+
+  const g=$('#m_grip');
+  g.min=GRANGE[0]; g.max=GRANGE[1]; g.step=(GRANGE[1]-GRANGE[0])/160;
+  const gv = MANUAL.grip==null ? GRANGE[1] : MANUAL.grip;
+  g.value=gv; showGrip(gv, MANUAL.grip==null);
+  g.oninput=()=>{ showGrip(Number(g.value),false); mpost({grip:Number(g.value)}); };
+  $('#m_gripOpen').onclick =()=>{ g.value=GRANGE[1]; g.oninput(); };
+  $('#m_gripClose').onclick=()=>{ g.value=GRANGE[0]; g.oninput(); };
+  $('#m_gripAuto').onclick =()=>{ mpost({grip:null}); showGrip(Number(g.value),true); };
+
+  const dj=$('#m_distJoint'), dt=$('#m_distTau');
+  dj.value=String(MANUAL.dist_joint);
+  dj.onchange=()=>mpost({dist_joint:Number(dj.value)});
+  dt.value=MANUAL.dist_tau;
+  $('#mv_distTau').textContent=fmt(MANUAL.dist_tau,2)+' N·m';
+  dt.oninput=()=>{ $('#mv_distTau').textContent=fmt(Number(dt.value),2)+' N·m';
+                   mpost({dist_tau:Number(dt.value)}); };
+  $('#m_distZero').onclick=()=>{ dt.value=0; dt.oninput(); };
+
+  const po=$('#m_poseOn');
+  po.checked=!!MANUAL.pose_on;
+  po.onchange=()=>{
+    mpost({pose_on:po.checked});
+    $('#m_poseBox').style.display=po.checked?'block':'none';
+    if(po.checked) buildPoseSliders();
+  };
+  $('#m_poseBox').style.display=po.checked?'block':'none';
+  POSE_BUILT=false;
+  if(po.checked) buildPoseSliders();
+}
+
+function showGrip(v, auto){
+  $('#mv_grip').textContent = auto ? '跟随场景' : (v*1000).toFixed(1)+' mm';
+}
+
+function buildPoseSliders(){
+  if(POSE_BUILT || !JRANGE.length) return;
+  const box=$('#m_poseBox'); box.innerHTML='';
+  // 起始值取当前实际构型，避免一打开机械臂就跳到别的姿势
+  const q0 = (LASTINFO.q && LASTINFO.q.length===JRANGE.length)
+           ? LASTINFO.q.slice() : JRANGE.map(r=>0.5*(r[0]+r[1]));
+  MANUAL.pose_q=q0.slice();
+  JRANGE.forEach((r,i)=>{
+    const row=document.createElement('div'); row.className='jrow';
+    row.innerHTML=`<span class="jn">${JNAME[i]}</span>`;
+    const s=document.createElement('input');
+    s.type='range'; s.min=r[0]; s.max=r[1]; s.step=(r[1]-r[0])/300; s.value=q0[i];
+    const lab=document.createElement('span'); lab.className='jv';
+    lab.textContent=(q0[i]*180/Math.PI).toFixed(1)+'°';
+    s.oninput=()=>{
+      lab.textContent=(Number(s.value)*180/Math.PI).toFixed(1)+'°';
+      MANUAL.pose_q[i]=Number(s.value);
+      mpost({pose_q:MANUAL.pose_q});
+    };
+    row.appendChild(s); row.appendChild(lab); box.appendChild(row);
+  });
+  POSE_BUILT=true;
+}
+
+let LASTINFO={};
+function updateManual(st){
+  const info=st.manual_info||{};
+  LASTINFO=info;
+  if(info.grip_actual!=null)
+    $('#mi_gripActual').textContent=(info.grip_actual*1000).toFixed(1);
+  if(info.tcp)
+    $('#mi_tcp').textContent=info.tcp.map(x=>x.toFixed(3)).join('  /  ');
+  // 抓取场景自己接管夹爪：停用滑块并说明原因，而不是让它看起来能用却没反应
+  const lock=!!info.grip_locked;
+  $('#m_grip').disabled=lock;
+  $('#m_gripOpen').disabled=lock; $('#m_gripClose').disabled=lock;
+  $('#m_gripAuto').disabled=lock;
+  $('#m_gripLock').style.display=lock?'block':'none';
+}
+
+$('#resetBtn').onclick=()=>post('/reset');
+$('#pauseBtn').onclick=()=>post('/pause',{paused:!PAUSED});
+$('#overviewBtn').onclick=()=>post('/view',{mode:'overview'});
+$('#wristBtn').onclick=()=>post('/view',{mode:'wrist'});
+$('#contactBtn').onclick=()=>post('/contacts',{on:!CONTACTS});
+$('#prevBtn').onclick=()=>{ if(STEP>0){STEP--; renderStep();} };
+$('#nextBtn').onclick=()=>{ if(STEP<STEPS.length-1){STEP++; renderStep();} };
+window.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
+  if(e.key==='ArrowRight') $('#nextBtn').click();
+  if(e.key==='ArrowLeft') $('#prevBtn').click();
+});
+
+window.addEventListener('load',()=>{ loadMeta(); setInterval(poll,120); });
+window.onresize=draw;
+</script>
+</body>
+</html>

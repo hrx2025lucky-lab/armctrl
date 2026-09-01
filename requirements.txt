@@ -1,0 +1,24 @@
+# armctrl 运行依赖
+#
+# 安装：
+#     pip install -r requirements.txt
+#
+# ⚠️ 另外还需要 Franka Panda 的 MuJoCo 模型（第三方资产，不随本仓库分发）：
+#     git clone https://github.com/google-deepmind/mujoco_menagerie.git
+#     export MUJOCO_MENAGERIE=/path/to/mujoco_menagerie
+# 详见 README「快速开始」。
+#
+# 版本下限取自开发环境实测通过的版本；不写死上限，便于跟进新版。
+
+# ---- 核心：仿真与数值 ----
+mujoco>=3.2          # 物理仿真、模型解析、接触求解
+numpy>=1.26          # 全仓库基础
+scipy>=1.11          # 线性代数、信号处理、优化
+
+# ---- 动力学回归矩阵（identification/regressor.py 顶层 import，必装）----
+pin>=3.0             # Pinocchio 的 Python 包名就叫 pin
+
+# ---- 以下两个是**惰性导入**：不装也能 import 本仓库，
+#      但相关模块和测试会失败 ----
+toppra>=0.6          # planning/topp.py：时间最优轨迹参数化
+osqp>=0.6            # control/mpc.py：MPC 的 QP 求解器

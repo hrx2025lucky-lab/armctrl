@@ -1,0 +1,32 @@
+# ============================================================
+# 个人学习材料与配套讲义 —— 不随公开仓库分发
+# 依赖讲义的 8 个测试会自动 skip，机制见 armctrl/tests/_docs.py
+# ============================================================
+armctrl_讲解/
+armctrl_MoveIt2对照说明.md
+armctrl/tests/test_teaching_consistency.py
+
+# ============================================================
+# webm 由 armctrl/demos/video.py 从同名 mp4 转出，属于派生产物（省 10 MB）
+# ============================================================
+armctrl/videos/*.webm
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 运行产物
+*.log
+.pytest_cache/
+htmlcov/
+.coverage
+
+# 系统
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
