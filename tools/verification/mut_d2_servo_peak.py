@@ -46,7 +46,7 @@ def run():
     r = subprocess.run([PY, "-m", "unittest",
                         "armctrl.tests.test_servo_resonance", "-q"],
                        cwd=ROOT, capture_output=True, text=True,
-                       env={**os.environ, "PYTHONPATH": ".", "MUJOCO_GL": "egl",
+                       env={**os.environ, "PYTHONPATH": ".",
                             "PYTHONDONTWRITEBYTECODE": "1"})
     return "OK" in r.stderr.splitlines()[-1] if r.stderr.strip() else False
 

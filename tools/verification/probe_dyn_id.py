@@ -2,7 +2,7 @@
 
 跑法：
     cd "motion control"
-    PYTHONPATH=. MUJOCO_GL=egl <venv>/bin/python <本文件>
+    PYTHONPATH=. <venv>/bin/python <本文件>
 """
 import numpy as np
 from armctrl.identification.regressor import DynamicsRegressor, LockedFingerArmView

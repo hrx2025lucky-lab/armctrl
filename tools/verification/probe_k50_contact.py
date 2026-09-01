@@ -18,7 +18,7 @@ oracle 独立性
 
 用法：
     cd <repo>
-    PYTHONPATH=. MUJOCO_GL=egl python tools/verification/probe_k50_contact.py
+    PYTHONPATH=. python tools/verification/probe_k50_contact.py
 """
 from __future__ import annotations
 

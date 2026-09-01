@@ -12,7 +12,7 @@
 
 用法：
     cd <repo>
-    PYTHONPATH=. MUJOCO_GL=egl <venv-python> \\
+    PYTHONPATH=. <venv-python> \\
         tools/verification/mut_e2_ilc.py
 """
 from __future__ import annotations
@@ -95,7 +95,6 @@ def run_tests(workdir: pathlib.Path = ROOT) -> tuple[bool, str]:
         [PY, "-m", "unittest", TEST, "-q"],
         cwd=workdir, capture_output=True, text=True,
         env={**os.environ, "PYTHONPATH": ".",
-             "MUJOCO_GL": os.environ.get("MUJOCO_GL", "egl"),
              "PYTHONDONTWRITEBYTECODE": "1"},
         timeout=1800)
     out = r.stdout + r.stderr

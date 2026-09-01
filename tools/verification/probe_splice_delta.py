@@ -23,7 +23,7 @@ oracle 独立性
 
 用法：
     cd <repo>
-    PYTHONPATH=. MUJOCO_GL=egl python tools/verification/probe_splice_delta.py
+    PYTHONPATH=. python tools/verification/probe_splice_delta.py
 """
 from __future__ import annotations
 

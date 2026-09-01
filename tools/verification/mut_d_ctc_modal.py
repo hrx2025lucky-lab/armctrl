@@ -117,7 +117,7 @@ def run() -> bool:
     r = subprocess.run(
         [PY, "-m", "unittest", *MODULES],
         cwd=ROOT, capture_output=True, text=True,
-        env={**os.environ, "PYTHONPATH": ".", "MUJOCO_GL": "egl",
+        env={**os.environ, "PYTHONPATH": ".",
              "PYTHONDONTWRITEBYTECODE": "1"})
     return r.returncode == 0
 

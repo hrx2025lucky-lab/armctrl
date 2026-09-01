@@ -11,7 +11,7 @@
 
 用法：
     cd <repo>
-    PYTHONPATH=. MUJOCO_GL=egl python tools/verification/mut_e3_creep.py
+    PYTHONPATH=. python tools/verification/mut_e3_creep.py
 """
 from __future__ import annotations
 
@@ -84,7 +84,6 @@ def run_tests(workdir: pathlib.Path = ROOT) -> tuple[bool, str]:
         [PY, "-m", "unittest", *TESTS, "-q"],
         cwd=workdir, capture_output=True, text=True,
         env={**os.environ, "PYTHONPATH": ".",
-             "MUJOCO_GL": os.environ.get("MUJOCO_GL", "egl"),
              "PYTHONDONTWRITEBYTECODE": "1"},
         timeout=3600)
     return r.returncode == 0, r.stdout + r.stderr

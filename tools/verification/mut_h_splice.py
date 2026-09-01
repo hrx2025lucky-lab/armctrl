@@ -6,7 +6,7 @@
 
 用法：
     cd <repo>
-    PYTHONPATH=. MUJOCO_GL=egl python tools/verification/mut_h_splice.py
+    PYTHONPATH=. python tools/verification/mut_h_splice.py
 """
 from __future__ import annotations
 
@@ -94,7 +94,6 @@ def run_tests() -> tuple[bool, str]:
         [PY, "-m", "unittest", *TESTS, "-q"],
         cwd=ROOT, capture_output=True, text=True,
         env={**os.environ, "PYTHONPATH": ".",
-             "MUJOCO_GL": os.environ.get("MUJOCO_GL", "egl"),
              "PYTHONDONTWRITEBYTECODE": "1"},
         timeout=1800)
     return r.returncode == 0, r.stdout + r.stderr
