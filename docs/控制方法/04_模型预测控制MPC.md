@@ -199,15 +199,9 @@ MPC 没有专门调参台场景，但可和轨迹跟踪/规划场景一起理解
 可运行命令：
 
 ```bash
-cd /home/limx/workspace/Roxan_warmup/armctrl_project && PYTHONPATH=. MUJOCO_MENAGERIE=/home/limx/workspace/Roxan_warmup/repos/mujoco_menagerie /home/limx/workspace/Roxan_warmup/envs/armctrl/bin/python -m unittest armctrl.tests.test_mpc 2>&1 | grep -v Polishing
+PYTHONPATH=. python -m unittest armctrl.tests.test_mpc 2>&1 | grep -v Polishing
 ```
 
-本次核对的真实符号：
-
-- `JointSpaceMPC.compute`；
-- `JointSpaceMPC.reset`；
-- `JointSpaceMPC._constraint_matrix`；
-- `JointSpaceMPC._constraint_bounds`。
 
 测试判据包括：
 
@@ -221,7 +215,6 @@ cd /home/limx/workspace/Roxan_warmup/armctrl_project && PYTHONPATH=. MUJOCO_MENA
 
 代码注释中保留了一个回归案例：旧兜底路径曾在 Panda 关节 2 返回 152.7 N·m，而上限是 87 N·m，约为 1.76 倍越限。
 
-本次综合验证实测：按项目指定前缀运行 13 个相关测试模块，`unittest` 输出 `Ran 349 tests in 418.719s`，结果 `OK`。
 
 ## 六、边界与局限
 

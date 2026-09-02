@@ -95,7 +95,7 @@ flowchart TD
 运行测试或脚本时使用项目指定环境，例如：
 
 ```bash
-cd /home/limx/workspace/Roxan_warmup/armctrl_project && PYTHONPATH=. MUJOCO_MENAGERIE=/home/limx/workspace/Roxan_warmup/repos/mujoco_menagerie /home/limx/workspace/Roxan_warmup/envs/armctrl/bin/python -m unittest armctrl.tests.test_mpc 2>&1 | grep -v Polishing
+PYTHONPATH=. python -m unittest armctrl.tests.test_mpc 2>&1 | grep -v Polishing
 ```
 
 不要在普通测试中设置 `MUJOCO_GL=egl`；只有录像或渲染才需要。

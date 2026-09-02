@@ -187,18 +187,9 @@ for k in range(n_trials):
 可运行命令：
 
 ```bash
-cd /home/limx/workspace/Roxan_warmup/armctrl_project && PYTHONPATH=. MUJOCO_MENAGERIE=/home/limx/workspace/Roxan_warmup/repos/mujoco_menagerie /home/limx/workspace/Roxan_warmup/envs/armctrl/bin/python -m unittest armctrl.tests.test_ilc_replan 2>&1 | grep -v Polishing
+PYTHONPATH=. python -m unittest armctrl.tests.test_ilc_replan 2>&1 | grep -v Polishing
 ```
 
-本次核对的真实符号：
-
-- `JointComplianceModel.deflection`；
-- `JointComplianceModel.compensate`；
-- `zero_phase_lowpass`；
-- `IterativeLearningController.update`；
-- `IterativeLearningController.convergence_ratio`；
-- `IterativeLearningController.contraction_factor`；
-- `IlcScene`。
 
 测试判据覆盖：
 
@@ -211,7 +202,6 @@ cd /home/limx/workspace/Roxan_warmup/armctrl_project && PYTHONPATH=. MUJOCO_MENA
 
 代码注释中有一个可复核示例：在标量对象、`q_alpha=0.15` 时，高频 150 周期分量从 `0.7071` 到 `0.702098`，只学掉约 `0.7%`。
 
-本次综合验证实测：按项目指定前缀运行 13 个相关测试模块，`unittest` 输出 `Ran 349 tests in 418.719s`，结果 `OK`。
 
 ## 六、边界与局限
 
