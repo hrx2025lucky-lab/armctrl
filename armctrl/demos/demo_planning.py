@@ -40,10 +40,10 @@ import numpy as np
 import mujoco
 
 from armctrl.core.robot import ArmModel
-from armctrl.demos.video import write_video
+from armctrl.demos.video import video_path, write_video
 from armctrl.identification.regressor import DynamicsRegressor
 from armctrl.planning.scene import (
-    Obstacle, PANDA_XML, build_panda_scene, movable_geoms, self_collision_pairs,
+    Obstacle, PANDA_NOHAND_XML, build_panda_scene, movable_geoms, self_collision_pairs,
 )
 from armctrl.planning.collision import CollisionChecker
 from armctrl.planning.rrt import (
@@ -83,13 +83,18 @@ def build():
     环境碰撞只查**会动的**连杆：固定底座压在地面上，把它算进去会让所有构型非法。
     自碰撞则用全部连杆几何（底座确实可能被远端连杆撞到）。
     """
-    scene = build_panda_scene(OBSTACLES, with_visuals=True)
+    # nohand=True：纯路径规划不关心夹爪，用 7 自由度模型更贴题；
+    # 带夹爪时 nq=9、末端 body 叫 hand，两者不能混。
+    scene = build_panda_scene(OBSTACLES, with_visuals=True, nohand=True)
     robot = ArmModel(model=scene.model, ee_body="attachment",
                      arm_joints=[f"joint{i}" for i in range(1, N_ARM + 1)])
     env_geoms = movable_geoms(scene.model, scene.robot_geoms, robot.joint_ids)
     checker = CollisionChecker(
         scene.model, robot.qpos_idx, env_geoms, scene.obstacle_geoms,
-        self_collision_pairs(scene.model, scene.robot_geoms),
+        # ⚠️ 必须传 joint_ids：不传就会把**两根手指**也当成自碰撞对，
+        # 而夹爪闭合时两指本来就贴在一起 ⇒ 任何构型都被判非法，规划必然失败。
+        # 手指的相对位姿只由 finger_joint 决定，不在被规划的 7 个关节里。
+        self_collision_pairs(scene.model, scene.robot_geoms, robot.joint_ids),
         safety_margin=SAFETY_MARGIN, self_margin=SELF_MARGIN,
         distmax=0.30, resolution=RESOLUTION,
     )
@@ -114,7 +119,7 @@ def execute(scene, robot, traj, kp=400.0, kd=40.0, settle=0.5):
     返回 (ts, Q_actual, err_rms_mrad, 接触次数)。
     误差按同一时刻、施加控制之前记录。
     """
-    reg = DynamicsRegressor(PANDA_XML)
+    reg = DynamicsRegressor(PANDA_NOHAND_XML)
     m, d = scene.model, robot.data
     n_sub = max(int(round(DT / m.opt.timestep)), 1)
     tau_lim = robot.tau_limit
@@ -289,7 +294,7 @@ def record(out: str | None = None, seed: int = 0):
     smooth = shortcut_smooth(res.path, checker, iters=300, seed=seed)
     traj = JointPathTrajectory(smooth, V_MAX, A_MAX, J_MAX)
 
-    reg = DynamicsRegressor(PANDA_XML)
+    reg = DynamicsRegressor(PANDA_NOHAND_XML)
     m, d = scene.model, robot.data
     n_sub = max(int(round(DT / m.opt.timestep)), 1)
     mujoco.mj_resetData(m, d)
@@ -318,10 +323,7 @@ def record(out: str | None = None, seed: int = 0):
     renderer.close()
 
     if out is None:
-        vdir = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "videos")
-        os.makedirs(vdir, exist_ok=True)
-        out = os.path.join(vdir, "planning.mp4")
+        out = video_path("planning")
     written = write_video(frames, out, fps=FPS)
     print(f"[video] {len(frames)} 帧 @ {FPS} fps")
     for f in written:
@@ -330,7 +332,7 @@ def record(out: str | None = None, seed: int = 0):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--video", action="store_true", help="渲染 mp4 到 armctrl/videos/")
+    ap.add_argument("--video", action="store_true", help="渲染 mp4 到 media/videos/")
     ap.add_argument("--out", default=None)
     ap.add_argument("--seed", type=int, default=0)
     a = ap.parse_args()

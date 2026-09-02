@@ -11,7 +11,7 @@
       ../envs/armctrl/bin/python -m armctrl.tools.make_figures        # 全部
     ... -m armctrl.tools.make_figures 01 07                           # 只出这几篇的
 
-输出到 ``armctrl_讲解/图/``。
+输出到 ``media/figs/``。
 
 设计约定
 --------
@@ -38,7 +38,9 @@ import numpy as np
 from armctrl.tuner.base import Arrow, Frame, Ghost, Sphere, Trail, hex_rgba
 from armctrl.tuner.scenes import SCENES
 
-OUT_DIR = Path(__file__).resolve().parents[2] / "armctrl_讲解" / "图"
+#: ⭐ 配图属于**可再生产物**，和录像一样放 media/，不混进代码包，
+#: 也不放进不随仓库分发的讲义目录——否则公开仓库就拿不到图。
+OUT_DIR = Path(__file__).resolve().parents[2] / "media" / "figs"
 W, H = 620, 600
 #: 分隔条的灰度，和文档背景区分开即可
 SEP = 90

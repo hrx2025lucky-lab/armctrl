@@ -27,7 +27,7 @@ from armctrl.core.gripper import ParallelJawGripper
 from armctrl.core.kinematics import DLSInverseKinematics, Q_HOME_PANDA
 from armctrl.planning.trajectory import CartesianLine
 from armctrl.control.impedance import CartesianImpedanceController, ImpedanceGains
-from armctrl.demos.video import write_video
+from armctrl.demos.video import video_path, write_video
 from armctrl.assets import panda_xml
 
 
@@ -413,10 +413,7 @@ def record(out: str | None = None, camera: str = "grasp"):
     renderer.close()
 
     if out is None:
-        vdir = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))), "videos")
-        os.makedirs(vdir, exist_ok=True)
-        out = os.path.join(vdir, "gripper.mp4")
+        out = video_path("gripper")
     written = write_video(frames, out, fps=FPS)
     print(f"[video] {len(frames)} 帧 @ {FPS} fps，相机 {camera}")
     for f in written:
@@ -498,7 +495,7 @@ def main():
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--video", action="store_true",
-                    help="渲染 mp4/webm 到 armctrl/videos/")
+                    help="渲染 mp4/webm 到 media/videos/")
     ap.add_argument("--out", default=None)
     ap.add_argument("--camera", default="grasp", choices=["grasp", "grasp_close"])
     a = ap.parse_args()

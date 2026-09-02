@@ -30,7 +30,7 @@ import mujoco
 from armctrl.core.robot import ArmModel
 from armctrl.control.impedance import CartesianImpedanceController, ImpedanceGains
 from armctrl.control.momentum_observer import MomentumObserver, GravityCompensationTeaching
-from armctrl.demos.video import write_video
+from armctrl.demos.video import video_path, write_video
 from armctrl.planning.trajectory import CartesianLine
 
 
@@ -413,9 +413,7 @@ def run(scene_name: str, live: bool, out: str | None):
         return
 
     if out is None:
-        vdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "videos")
-        os.makedirs(vdir, exist_ok=True)
-        out = os.path.join(vdir, f"{scene_name}.mp4")
+        out = video_path(scene_name)
     renderer = mujoco.Renderer(m, height=720, width=1280)
     frames = []
     for k in range(n_steps):

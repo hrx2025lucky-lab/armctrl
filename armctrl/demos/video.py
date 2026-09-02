@@ -17,14 +17,30 @@
 
 在那之前，本机看 webm，或者用已经装好的 ffplay：
 
-    ffplay -autoexit armctrl/videos/planning.mp4
+    ffplay -autoexit media/videos/planning.mp4
 """
 
 from __future__ import annotations
 
 import os
+import pathlib
 import subprocess
 import tempfile
+
+#: 仓库根（本文件位于 <repo>/armctrl/demos/video.py）
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+#: ⭐ 录像统一输出到 <repo>/media/videos/。
+#: 为什么不放在 armctrl/ 里：那是**代码包**，二进制产物混进去会让
+#: `pip install .` 之类的打包把几十 MB 视频一起装走，也让「代码有多少行」
+#: 这类统计失真。产物归产物，代码归代码。
+VIDEO_DIR = REPO_ROOT / "media" / "videos"
+
+
+def video_path(name: str) -> str:
+    """录像的标准输出路径；目录不存在就建。"""
+    VIDEO_DIR.mkdir(parents=True, exist_ok=True)
+    return str(VIDEO_DIR / f"{name}.mp4")
 
 
 def write_video(frames, out_path: str, fps: int = 50,

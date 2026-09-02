@@ -38,7 +38,7 @@ python armctrl/demos/demo_gripper.py      # TCP vs 法兰、夹持力标定、pi
 # 录像（需要离屏渲染后端）
 MUJOCO_GL=egl python armctrl/demos/demo_gripper.py --video                 # 全景
 MUJOCO_GL=egl python armctrl/demos/demo_gripper.py --video --camera grasp_close \
-    --out armctrl/videos/gripper_close.mp4                                 # 夹持特写
+    --out media/videos/gripper_close.mp4                                 # 夹持特写
 ```
 
 ## 模块
@@ -163,8 +163,8 @@ Pick & place 实测（`demos/demo_gripper.py`，24 mm/0.15 kg 方块，60 N 夹�
 
 | 文件 | 相机 | 内容 |
 |---|---|---|
-| `videos/gripper.mp4` | `grasp` | 全景，642 帧 @ 50 fps（12.8 s） |
-| `videos/gripper_close.mp4` | `grasp_close` | 夹持特写，同一段序列 |
+| `media/videos/gripper.mp4` | `grasp` | 全景，642 帧 @ 50 fps（12.8 s） |
+| `media/videos/gripper_close.mp4` | `grasp_close` | 夹持特写，同一段序列 |
 
 仓库只收 `.mp4`；同名 `.webm` 是 `demos/video.py` 从 mp4 转出的派生产物，需要时本地生成。
 

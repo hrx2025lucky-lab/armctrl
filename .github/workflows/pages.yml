@@ -7,13 +7,17 @@ name: pages
 # Pages 站点（Resource not accessible by integration）。
 # 推 gh-pages 分支则会让 GitHub 自动把站点开起来，不需要任何手工设置。
 #
-# 所以这里做的事很简单：main 的 docs/ 一变，就同步到 gh-pages。
+# 站点内容由两部分拼起来：
+#   site/    页面本体（index.html、.nojekyll）
+#   media/   录像与配图（主分支里只存这一份，站点引用它）
+# 这样资源不用在仓库里存两遍。
 
 on:
   push:
     branches: [main]
     paths:
-      - "docs/**"
+      - "site/**"
+      - "media/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -32,15 +36,17 @@ jobs:
         with:
           fetch-depth: 0        # 要完整历史才能切到 gh-pages
 
-      - name: 把 docs/ 同步到 gh-pages
+      - name: 组装站点并同步到 gh-pages
         run: |
           set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # 站点内容先拿到手，再切分支（切过去之后 docs/ 就不在了）
+          # 先把站点拼好放到临时目录（切分支后 site/ 和 media/ 就不在了）
           tmp="$(mktemp -d)"
-          cp -r docs/. "$tmp/"
+          cp -r site/. "$tmp/"
+          mkdir -p "$tmp/media"
+          cp -r media/. "$tmp/media/"
 
           git checkout gh-pages
           # 只删站点文件，别碰 .git
@@ -52,5 +58,5 @@ jobs:
             echo "站点内容没有变化，跳过提交"
             exit 0
           fi
-          git commit -m "site: 同步 main 的 docs/（${GITHUB_SHA::7}）"
+          git commit -m "site: 同步 site/ + media/（${GITHUB_SHA::7}）"
           git push origin gh-pages

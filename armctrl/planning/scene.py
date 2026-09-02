@@ -411,7 +411,10 @@ def _add_visuals(spec: mujoco.MjSpec) -> None:
     top.pos = top_pos
     top.quat = _look_at_quat(top_pos, [0.30, 0.0, 0.40], up=(1.0, 0.0, 0.0)).tolist()
 
-    _add_wrist_camera(spec)
+    # 夹爪相机顾名思义要装在夹爪上；无夹爪模型（nohand）没有 hand，
+    # 跳过即可——纯路径规划本来也用不到腕部视角。
+    if spec.body("hand") is not None:
+        _add_wrist_camera(spec)
 
     spec.stat.center = [0.28, 0.0, 0.55]
     spec.stat.extent = 1.6
@@ -507,7 +510,8 @@ def build_panda_scene(obstacles: list[Obstacle],
                       markers: tuple[str, ...] = (),
                       imu_body: str | None = None,
                       imu_pos=(0.0, 0.0, 0.0),
-                      free_bodies: list["FreeBody"] | None = None) -> SceneInfo:
+                      free_bodies: list["FreeBody"] | None = None,
+                      nohand: bool = False) -> SceneInfo:
     """派生一个带障碍物的 Panda 场景并编译。
 
     返回 SceneInfo，其中 obstacle_geoms 已按传入顺序给出几何体 id，
@@ -516,8 +520,12 @@ def build_panda_scene(obstacles: list[Obstacle],
     imu_body 非空时在该连杆上挂一套 IMU 与真值传感器（见 add_imu）。
     imu_pos 给出 site 在该连杆坐标系下的位置——**它必须与估计器所用的量测点
     重合**，否则滤波器会看到一个恒定偏差并试图用零偏去解释它。
+
+    nohand=True 载入**不带夹爪**的 7 自由度模型。纯路径规划/时间参数化不关心
+    夹爪，用它可以少两个自由度、末端 body 是 ``attachment``；带夹爪时
+    ``nq=9``、末端是 ``hand``。两者的末端 body 名字不同，别弄混。
     """
-    spec = mujoco.MjSpec.from_file(PANDA_XML)
+    spec = mujoco.MjSpec.from_file(PANDA_NOHAND_XML if nohand else PANDA_XML)
     if with_visuals:
         _add_visuals(spec)
     for obs in obstacles:

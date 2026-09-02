@@ -30,7 +30,7 @@ import mujoco
 from armctrl.core.robot import ArmModel
 from armctrl.identification.regressor import DynamicsRegressor
 from armctrl.planning.scene import (
-    Obstacle, PANDA_XML, build_panda_scene, movable_geoms, self_collision_pairs,
+    Obstacle, PANDA_NOHAND_XML, build_panda_scene, movable_geoms, self_collision_pairs,
 )
 from armctrl.planning.collision import CollisionChecker
 from armctrl.planning.rrt import (
@@ -66,11 +66,12 @@ def build():
     checker_plan  规划与平滑用，裕度大，给后续倒角留余量
     checker_exec  最终验收用，裕度是真正要求的下限
     """
-    scene = build_panda_scene(OBSTACLES, with_visuals=True)
+    scene = build_panda_scene(OBSTACLES, with_visuals=True, nohand=True)
     robot = ArmModel(model=scene.model, ee_body="attachment",
                      arm_joints=[f"joint{i}" for i in range(1, N_ARM + 1)])
     env = movable_geoms(scene.model, scene.robot_geoms, robot.joint_ids)
-    pairs = self_collision_pairs(scene.model, scene.robot_geoms)
+    # 同 demo_planning：不传 joint_ids 会把两根手指算成自碰撞对。
+    pairs = self_collision_pairs(scene.model, scene.robot_geoms, robot.joint_ids)
 
     def mk(margin):
         return CollisionChecker(
@@ -89,7 +90,7 @@ def traj_clearance(checker, traj, dt=0.01) -> float:
 
 def execute(scene, robot, traj, kp=400.0, kd=40.0, settle=0.4):
     """MuJoCo 中用计算力矩控制执行，返回 (跟踪 RMS mrad, 接触次数)。"""
-    reg = DynamicsRegressor(PANDA_XML)
+    reg = DynamicsRegressor(PANDA_NOHAND_XML)
     m, d = scene.model, robot.data
     n_sub = max(int(round(DT / m.opt.timestep)), 1)
     obstacles, robots = set(scene.obstacle_geoms), set(scene.robot_geoms)

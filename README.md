@@ -10,12 +10,27 @@
 
 ```
 armctrl_project/
-├── armctrl/                      实现 + 27 个测试文件
-├── tools/verification/           探针与变异验证脚本
-├── requirements.txt              运行依赖
-├── armctrl_调参台使用说明.md      12 个场景的动手实验与原理
-├── armctrl_MuJoCo窗口与启动命令.md  看板、快捷键、各种启动方式
-└── tuner.sh                      交互式调参台
+├── armctrl/              代码包（只有代码，产物一律不放这里）
+│   ├── core/             运动学、雅可比、动力学量
+│   ├── planning/         轨迹、路径、碰撞、时间参数化、在线重规划
+│   ├── control/          阻抗、计算力矩、自适应、MPC、ILC、抓取、视觉伺服…
+│   ├── estimation/       IMU、卡尔曼、ESKF
+│   ├── identification/   回归矩阵、基参数、离线最小二乘
+│   ├── tuner/            交互式调参台（12 个场景）
+│   ├── demos/            9 个命令行 demo + 录像脚本
+│   ├── tools/            配图生成
+│   └── tests/            27 个测试文件
+├── docs/                 文档
+│   ├── 控制方法/          ⭐ 每个控制方法：原理 + 怎么用在机械臂上
+│   ├── 调参台使用说明.md
+│   └── MuJoCo窗口与启动命令.md
+├── media/                可再生产物（不进代码包）
+│   ├── videos/           7 段录像
+│   └── figs/             14 张对照图
+├── site/                 项目主页（GitHub Pages 源）
+├── tools/verification/   探针与变异验证脚本
+├── requirements.txt
+└── tuner.sh
 ```
 
 ---
@@ -79,7 +94,7 @@ MuJoCo 自带一批可视化开关，按错了画面会突然变得很奇怪，*
 再按一次就恢复。
 
 ⭐ **完整的看板说明、快捷键全表与各种启动命令**见
-[`armctrl_MuJoCo窗口与启动命令.md`](armctrl_MuJoCo窗口与启动命令.md)。
+[`docs/MuJoCo窗口与启动命令.md`](docs/MuJoCo窗口与启动命令.md)。
 两块看板（左：Watch / 物理 / 渲染；右：Profiler / Sensor）**默认是隐藏的**，
 按 <kbd>Tab</kbd> 与 <kbd>Shift</kbd>+<kbd>Tab</kbd> 调出来。
 
@@ -112,31 +127,61 @@ PYTHONPATH=. MUJOCO_GL=egl python tools/verification/mut_e3_creep.py
 
 ## 仿真录像
 
-不想装环境的话，仓库里有 7 段 MuJoCo 录像可以直接看
-（`armctrl/videos/`，都由 `armctrl/demos/` 里的脚本生成，可复现）：
+⚠️ **GitHub 的文件页面不能在线播放 mp4**（点进去只有一个 "View raw"）。
+想直接看，请到项目主页：
+
+### ▶️ **<https://hrx2025lucky-lab.github.io/armctrl/>** —— 7 段录像内嵌可播
 
 | 录像 | 看什么 |
 |---|---|
-| `impedance.mp4` | 末端被推开后柔顺退让、松手弹回 |
-| `stiffness.mp4` | 同样的外力，刚度不同 ⇒ 偏移量不同 |
-| `collision.mp4` | 动量观测器检测到碰撞后主动退让 |
-| `teaching.mp4` | 拖动示教：人拖着走，松手后复现 |
-| `gripper.mp4` | 完整 pick & place |
-| `gripper_close.mp4` | 夹持特写：指垫接触与夹持力建立 |
-| `planning.mp4` | RRT-Connect 绕开障碍 + 平滑后的执行 |
+| `impedance` | 末端被推开后柔顺退让、松手弹回 |
+| `stiffness` | 同样的外力，刚度不同 ⇒ 偏移量不同 |
+| `collision` | 动量观测器检测到碰撞后主动退让 |
+| `teaching` | 拖动示教：人拖着走，松手后复现 |
+| `gripper` | 完整 pick & place |
+| `gripper_close` | 夹持特写：指垫接触与夹持力建立 |
+| `planning` | RRT-Connect 绕开障碍 + 平滑后的执行 |
 
-自己重新生成（`MUJOCO_GL=egl` 用离屏渲染，无显示器也能录）：
+文件本身在 [`media/videos/`](media/videos/)（mp4 + 同名 webm）。
+全部由 `armctrl/demos/` 里的脚本生成，可复现：
 
 ```bash
-# 前四个走通用录像入口，--scene 可选 impedance / stiffness / collision / teaching
-MUJOCO_GL=egl PYTHONPATH=. python armctrl/demos/visualize.py --scene impedance
+export PYTHONPATH=.
+export MUJOCO_GL=egl          # 离屏渲染，无显示器也能录
 
-# 后三个由各自的 demo 带 --video
-MUJOCO_GL=egl PYTHONPATH=. python armctrl/demos/demo_gripper.py --video
-MUJOCO_GL=egl PYTHONPATH=. python armctrl/demos/demo_gripper.py --video \
-    --camera grasp_close --out armctrl/videos/gripper_close.mp4
-MUJOCO_GL=egl PYTHONPATH=. python armctrl/demos/demo_planning.py --video
+# 前四段走通用入口，--scene 可选 impedance / stiffness / collision / teaching
+python armctrl/demos/visualize.py --scene impedance
+
+# 后三段由各自的 demo 带 --video
+python armctrl/demos/demo_gripper.py --video
+python armctrl/demos/demo_gripper.py --video --camera grasp_close \
+    --out media/videos/gripper_close.mp4
+python armctrl/demos/demo_planning.py --video
 ```
+
+配图同理：`python -m armctrl.tools.make_figures` 输出到 [`media/figs/`](media/figs/)。
+
+---
+
+## ⭐ 控制方法说明文档
+
+[`docs/控制方法/`](docs/控制方法/) 每个方法一篇，统一按
+**要解决的问题 → 原理 → 怎么用在机械臂上 → 代码在哪 → 怎么验证 → 边界**
+六节写。重点在第三节：输入输出是什么、在控制回路哪一层、参数怎么整定、有哪些工程陷阱。
+
+| | 文档 | 一句话 |
+|---:|---|---|
+| 01 | [笛卡尔阻抗与导纳](docs/控制方法/01_笛卡尔阻抗与导纳.md) | 把末端塑造成可调的虚拟弹簧-阻尼系统 |
+| 02 | [动量观测器与碰撞检测](docs/控制方法/02_动量观测器与碰撞检测.md) | 用动力学残差估外力，**不用力传感器** |
+| 03 | [自适应控制](docs/控制方法/03_自适应控制.md) | 在线更新动力学参数 / RBF 权重 |
+| 04 | [模型预测控制 MPC](docs/控制方法/04_模型预测控制MPC.md) | 把力矩、速度、限位约束显式写进在线优化 |
+| 05 | [迭代学习控制 ILC](docs/控制方法/05_迭代学习控制ILC.md) | 重复轨迹逐遍学前馈，压低可重复误差 |
+| 06 | [模态分析与振动抑制](docs/控制方法/06_模态分析与振动抑制.md) | 耦合模态 + 陷波 + 输入整形 + 串级伺服 |
+| 07 | [抓取力控与滑移检测](docs/控制方法/07_抓取力控与滑移检测.md) | 防滑最小夹持力、滑移检测、力自适应 |
+| 08 | [视觉伺服](docs/控制方法/08_视觉伺服.md) | 用「看到的」而不是「记住的」去对准 |
+| 09 | [动力学参数辨识](docs/控制方法/09_动力学参数辨识.md) | 回归矩阵、基参数、增量 QR 最小二乘 |
+
+索引与阅读路线见 [`docs/控制方法/README.md`](docs/控制方法/README.md)。
 
 ---
 
