@@ -13,7 +13,7 @@ armctrl_MoveIt2对照说明.md
 # ============================================================
 # webm 由 armctrl/demos/video.py 从同名 mp4 转出，属于派生产物（省 10 MB）
 # ============================================================
-armctrl/videos/*.webm
+media/videos/*.webm
 
 # Python
 __pycache__/
