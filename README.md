@@ -14,6 +14,7 @@ armctrl_project/
 ├── tools/verification/           探针与变异验证脚本
 ├── requirements.txt              运行依赖
 ├── armctrl_调参台使用说明.md      12 个场景的动手实验与原理
+├── armctrl_MuJoCo窗口与启动命令.md  看板、快捷键、各种启动方式
 └── tuner.sh                      交互式调参台
 ```
 
@@ -75,8 +76,12 @@ MuJoCo 自带一批可视化开关，按错了画面会突然变得很奇怪，*
 | `C` / `F` | 接触点 / 接触力 | 接触处冒出小点和箭头 |
 | `T` | 透明 | 整机变半透明 |
 
-再按一次就恢复。其中 `I` 那个红盒子最吓人，解释见
-[`armctrl_调参台使用说明.md`](armctrl_调参台使用说明.md) 的「原生窗口按键」一节。
+再按一次就恢复。
+
+⭐ **完整的看板说明、快捷键全表与各种启动命令**见
+[`armctrl_MuJoCo窗口与启动命令.md`](armctrl_MuJoCo窗口与启动命令.md)。
+两块看板（左：Watch / 物理 / 渲染；右：Profiler / Sensor）**默认是隐藏的**，
+按 <kbd>Tab</kbd> 与 <kbd>Shift</kbd>+<kbd>Tab</kbd> 调出来。
 
 测试：
 
