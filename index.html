@@ -303,6 +303,27 @@ git clone https://github.com/google-deepmind/mujoco_menagerie.git ~/mujoco_menag
       其余：<code>estimation</code> · <code>attitude</code> · <code>planning</code> ·
       <code>replan</code> · <code>teaching</code> · <code>ilc</code>
     </p>
+
+    <h3>原生窗口的看板默认是关的</h3>
+    <p>
+      调参台用 <code>show_left_ui=False, show_right_ui=False</code> 启动，
+      两块看板都隐藏——按 <span class="kbd">Tab</span> 调出左看板
+      （<b>Watch</b> / 物理 / 渲染），<span class="kbd">Shift</span>+<span class="kbd">Tab</span>
+      调出右看板（Profiler / Sensor）。
+    </p>
+    <p>
+      <b>Watch</b> 能实时盯住任意一个 <code>MjData</code> 字段，
+      比如 <code>ncon</code>（接触点个数）、<code>qfrc_constraint</code>（约束力矩）——
+      「地面到底帮忙扛了多少力」就是这么量出来的。
+    </p>
+    <div class="callout">
+      <p>
+        ⚠️ 画面突然被<b>红色半透明盒子</b>罩住不是报错，是误按了
+        <span class="kbd">I</span>（惯量盒），再按一次就恢复。
+        完整的看板说明、快捷键全表与各种启动命令见仓库里的
+        <a href="https://github.com/hrx2025lucky-lab/armctrl/blob/main/armctrl_MuJoCo%E7%AA%97%E5%8F%A3%E4%B8%8E%E5%90%AF%E5%8A%A8%E5%91%BD%E4%BB%A4.md"><b>《MuJoCo 窗口与启动命令》</b></a>。
+      </p>
+    </div>
   </div>
 </section>
 
